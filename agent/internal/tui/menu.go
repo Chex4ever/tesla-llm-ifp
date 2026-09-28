@@ -39,21 +39,29 @@ func buildMenu(st *agent.State) (items []menuItem, defaultIdx int) {
 		items = append(items, menuItem{ID: menuCopyJoin, Label: "Copy join link", Hint: "share with another PC"})
 	}
 	if enrolled {
-		hostLabel := "Host Nest + UI: off"
-		hostHint := "local nest & fleet panel"
 		if hostNest {
-			hostLabel = "Host Nest + UI: on"
-			hostHint = "turn off (no local nest/UI)"
+			items = append(items, menuItem{
+				ID: menuHostNest, Label: "Host Nest + UI: ON",
+				Hint: "Nest + panel on this PC — Enter to turn off",
+			})
+		} else {
+			items = append(items, menuItem{
+				ID: menuHostNest, Label: "Host Nest + UI: OFF",
+				Hint: "Enter to enable Nest + panel",
+			})
 		}
-		items = append(items, menuItem{ID: menuHostNest, Label: hostLabel, Hint: hostHint})
 
-		inferLabel := "Accept inference: off"
-		inferHint := "this PC will take LLM jobs"
 		if isInfer(st) {
-			inferLabel = "Accept inference: on"
-			inferHint = "console-only (no GPU jobs)"
+			items = append(items, menuItem{
+				ID: menuInfer, Label: "Accept inference: ON",
+				Hint: "this PC takes LLM jobs — Enter to stop",
+			})
+		} else {
+			items = append(items, menuItem{
+				ID: menuInfer, Label: "Accept inference: OFF",
+				Hint: "console only, no jobs — Enter to start taking jobs",
+			})
 		}
-		items = append(items, menuItem{ID: menuInfer, Label: inferLabel, Hint: inferHint})
 	}
 	items = append(items,
 		menuItem{ID: menuRun, Label: "Run", Hint: "start ship"},
