@@ -36,15 +36,16 @@ type locateHit struct {
 }
 
 type peerConn struct {
-	id     string
-	mode   string
-	name   string
-	addrs  []string
-	isNest bool
-	nestURL string
-	conn   *websocket.Conn
-	send   chan []byte
-	seen   time.Time
+	id        string
+	mode      string
+	name      string
+	addrs     []string
+	isNest    bool
+	nestURL   string
+	helloSent bool // nest↔nest: only one NestHello reply per connection
+	conn      *websocket.Conn
+	send      chan []byte
+	seen      time.Time
 }
 
 func New(id, advertURL, kind string) *Server {
@@ -152,7 +153,7 @@ func (s *Server) handleEnvelope(pc *peerConn, env *protocol.Envelope, raw []byte
 		}
 	case protocol.TypeNestHello:
 		var h protocol.NestHello
-		if err := json.Unmarshal(env.Payload, &h); err != nil {
+		if err := json.Unmarshal(env.Payload, &h); err != nil || h.NestID == "" {
 			return
 		}
 		pc.id = h.NestID
@@ -163,11 +164,14 @@ func (s *Server) handleEnvelope(pc *peerConn, env *protocol.Envelope, raw []byte
 		s.mu.Lock()
 		s.peerNests[h.NestID] = h.URL
 		s.mu.Unlock()
-		// reply hello
-		s.sendJSON(pc, protocol.Envelope{
-			Type: protocol.TypeNestHello, From: s.ID, Nest: s.ID,
-			Payload: mustJSON(protocol.NestHello{NestID: s.ID, URL: s.URL, Kind: s.Kind}),
-		})
+		// Reply once so dialer↔acceptor don't echo NestHello forever.
+		if !pc.helloSent {
+			pc.helloSent = true
+			s.sendJSON(pc, protocol.Envelope{
+				Type: protocol.TypeNestHello, From: s.ID, Nest: s.ID,
+				Payload: mustJSON(protocol.NestHello{NestID: s.ID, URL: s.URL, Kind: s.Kind}),
+			})
+		}
 	case protocol.TypeForward, protocol.TypeGossip, protocol.TypeInferReq, protocol.TypeInferResp,
 		protocol.TypeEnsureModel, protocol.TypeNestAdvert:
 		s.route(env, raw, pc.id)
@@ -340,11 +344,21 @@ func (s *Server) register(pc *peerConn) {
 	if pc.id == "" {
 		return
 	}
+	if old, ok := s.peers[pc.id]; ok && old == pc {
+		return // same connection already mapped; avoid log spam
+	}
 	if old, ok := s.peers[pc.id]; ok && old != pc {
 		_ = old.conn.Close()
 	}
 	s.peers[pc.id] = pc
-	log.Printf("crowsnest %s: registered %s (nest=%v)", s.ID[:8], pc.id, pc.isNest)
+	log.Printf("crowsnest %s: registered %s (nest=%v)", shortID(s.ID), pc.id, pc.isNest)
+}
+
+func shortID(id string) string {
+	if len(id) <= 8 {
+		return id
+	}
+	return id[:8]
 }
 
 func (s *Server) unregister(pc *peerConn) {
@@ -452,7 +466,7 @@ func (s *Server) sessionPeerNest(ctx context.Context, nestURL string) error {
 	}
 	defer conn.Close()
 	pc := &peerConn{
-		id: "pending-" + nestURL, isNest: true, nestURL: nestURL,
+		id: "pending-" + nestURL, isNest: true, nestURL: nestURL, helloSent: true,
 		conn: conn, send: make(chan []byte, 128), seen: time.Now(),
 	}
 	go s.writePump(pc)
