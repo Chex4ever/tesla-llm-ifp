@@ -436,7 +436,11 @@ func startShip(cfgDir string, st *agent.State) tea.Cmd {
 		}
 		msg := fmt.Sprintf("Ship started (pid %d, mode=%s)", cmd.Process.Pid, mode)
 		if mode == "captain" {
-			msg += ". UI http://127.0.0.1:7842"
+			ui := "127.0.0.1:7842"
+			if st.UIAddr != "" {
+				ui = st.UIAddr
+			}
+			msg += ". UI http://" + ui
 		}
 		return logMsg(msg)
 	}

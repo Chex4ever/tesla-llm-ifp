@@ -177,10 +177,12 @@ func runShip(ctx context.Context, st *State, opt RunOptions) error {
 		}
 		handler := api.Handler(captain.UIHandler())
 		listen := uiAddr
+		if listen == "" {
+			listen = protocol.DefaultCaptainUI
+		}
+		// Always bind Captain UI on UIAddr (default 127.0.0.1:7842).
+		// --expose-api enables /v1 on the same listener; APIAddr is advertise-only.
 		if st.ExposeAPI || opt.ExposeAPI {
-			if apiAddr != "" {
-				listen = apiAddr
-			}
 			log.Printf("Captain UI + API on http://%s", listen)
 		} else {
 			log.Printf("Captain UI on http://%s", listen)

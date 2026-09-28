@@ -105,7 +105,7 @@ func main() {
 		expose := fs.Bool("expose-api", false, "Captain: serve OpenAI /v1")
 		listen := fs.String("listen", "", "listen addr (crowsnest default :7843)")
 		uiAddr := fs.String("ui", "", "captain UI addr")
-		apiAddr := fs.String("api", "", "captain API addr when exposing")
+		apiAddr := fs.String("api", "", "captain API advertise addr (gossip); UI always on --ui")
 		_ = fs.Parse(os.Args[2:])
 		loadDotEnv(agent.DefaultConfigPath())
 		m := *mode
