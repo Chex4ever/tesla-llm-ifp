@@ -80,7 +80,8 @@ Ops: [docs/runbooks/pirate-fleet.md](docs/runbooks/pirate-fleet.md).
 
 ```bash
 go build -o bin/pirate ./agent/cmd/pirate
-# Windows: go build -o bin/pirate.exe ./agent/cmd/pirate
 ```
-
+```powershell
+go build -o bin/pirate.exe ./agent/cmd/pirate
+```
 Legacy Compose under `deploy/compose.yml` / `apps/fleet-api` is **not** the Pirate Fleet path.
