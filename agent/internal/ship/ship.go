@@ -29,8 +29,10 @@ type Config struct {
 	Version        string
 	ExposeAPI      bool
 	APIAdvertise   string
-	LocalNestURL   string // captain's own nest (advertised)
+	LocalNestURL   string // Host Nest URL when HostNest
 	LocalNestID    string
+	HostNest       bool
+	Infer          bool // accept inference jobs
 	Tags           []string
 	MaxVRAMMb      int // 0 = use detected GPU VRAM as capacity
 	OllamaURL      string
@@ -328,6 +330,13 @@ func (s *Ship) handleInfer(env protocol.Envelope) {
 	if err := json.Unmarshal(env.Payload, &req); err != nil {
 		return
 	}
+	if !s.cfg.Infer {
+		_ = s.sendTo(env.From, protocol.Envelope{
+			Type: protocol.TypeInferResp, From: s.cfg.NodeID, To: env.From, TTL: protocol.MaxNestHops,
+			Payload: mustJSON(protocol.InferResponse{RequestID: req.RequestID, StatusCode: 503, Error: "inference disabled on this ship"}),
+		})
+		return
+	}
 	s.mu.Lock()
 	s.load++
 	s.mu.Unlock()
@@ -363,9 +372,11 @@ func (s *Ship) broadcastGossip() {
 	active := append([]string{}, s.active...)
 	s.mu.Unlock()
 	ts := time.Now().UTC()
+	infer := s.cfg.Infer
 	g := protocol.GossipPayload{
 		NodeID: s.cfg.NodeID, Name: s.cfg.Name, Mode: s.cfg.Mode, Version: s.cfg.Version,
 		ModelsReady: models, Tags: tags, GPUName: info.GPUName, VRAMMb: info.VRAMMb, MaxVRAMMb: maxVRAM,
+		HostNest: s.cfg.HostNest, Infer: &infer,
 		RuntimeHealthy: healthy,
 		ExposeAPI: s.cfg.ExposeAPI, APIAdvertise: s.cfg.APIAdvertise,
 		NestURL: s.cfg.LocalNestURL, NestsConnected: active, Load: load, TS: ts,

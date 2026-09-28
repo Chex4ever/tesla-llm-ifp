@@ -36,7 +36,15 @@ func Run(ctx context.Context, opt RunOptions) error {
 		mode = st.Mode
 	}
 	if mode == "" {
-		mode = protocol.ModeWorker
+		mode = protocol.ModeShip
+	}
+	// Legacy CLI modes map to capabilities
+	switch mode {
+	case protocol.ModeCaptain:
+		st.HostNest = true
+		mode = protocol.ModeShip
+	case protocol.ModeWorker:
+		mode = protocol.ModeShip
 	}
 	st.Mode = mode
 	if opt.ExposeAPI {
@@ -47,13 +55,13 @@ func Run(ctx context.Context, opt RunOptions) error {
 	switch mode {
 	case protocol.ModeCrowsNest:
 		return runStandaloneNest(ctx, st, opt)
-	case protocol.ModeWorker, protocol.ModeCaptain:
+	case protocol.ModeShip, protocol.ModeWorker, protocol.ModeCaptain:
 		if st.JoinSecret == "" {
 			return fmt.Errorf("not enrolled: run enroll with --join-secret first")
 		}
 		return runShip(ctx, st, opt)
 	default:
-		return fmt.Errorf("unknown mode %q (worker|captain|crowsnest)", mode)
+		return fmt.Errorf("unknown mode %q (ship|crowsnest)", mode)
 	}
 }
 
@@ -65,7 +73,6 @@ func runStandaloneNest(ctx context.Context, st *State, opt RunOptions) error {
 	}
 	ns := nest.New(st.NestID, wsURL, "public")
 	log.Printf("Crow's Nest on %s advert=%s id=%s", listen, wsURL, ns.ID)
-	// optional uplinks from state nests
 	for _, u := range st.Nests {
 		if u != "" && u != wsURL {
 			go ns.DialPeerNest(ctx, u)
@@ -96,10 +103,9 @@ func runShip(ctx context.Context, st *State, opt RunOptions) error {
 	}
 
 	var localNestURL, localNestID string
-	var nestServer *nest.Server
 	errCh := make(chan error, 4)
 
-	if st.Mode == protocol.ModeCaptain {
+	if st.HostNest {
 		if st.NestID == "" {
 			st.NestID = uuid.NewString()
 		}
@@ -112,12 +118,11 @@ func runShip(ctx context.Context, st *State, opt RunOptions) error {
 		localNestURL = wsURL
 		localNestID = st.NestID
 		st.LocalNestURL = wsURL
-		// Prefer own nest for local deckhands in invite seeds
 		st.Nests = uniqueNests([]string{wsURL}, st.Nests)
 		_ = SaveState(opt.ConfigDir, st)
 
-		nestServer = nest.New(st.NestID, wsURL, "captain")
-		log.Printf("Captain Nest on %s (%s)", nestListen, wsURL)
+		nestServer := nest.New(st.NestID, wsURL, "captain")
+		log.Printf("Host Nest on %s (%s)", nestListen, wsURL)
 		for _, u := range st.Nests {
 			if u != wsURL {
 				go nestServer.DialPeerNest(ctx, u)
@@ -138,7 +143,7 @@ func runShip(ctx context.Context, st *State, opt RunOptions) error {
 	sh, err := ship.New(ship.Config{
 		NodeID:       st.NodeID,
 		Name:         st.Name,
-		Mode:         st.Mode,
+		Mode:         protocol.ModeShip,
 		JoinSecret:   st.JoinSecret,
 		Nests:        st.Nests,
 		Version:      opt.AgentVersion,
@@ -146,6 +151,8 @@ func runShip(ctx context.Context, st *State, opt RunOptions) error {
 		APIAdvertise: apiAddr,
 		LocalNestURL: localNestURL,
 		LocalNestID:  localNestID,
+		HostNest:     st.HostNest,
+		Infer:        st.Infer,
 		Tags:         append([]string{}, st.Tags...),
 		MaxVRAMMb:    st.MaxVRAMMb,
 		OllamaURL:    or(st.OllamaURL, "http://127.0.0.1:11434"),
@@ -161,7 +168,7 @@ func runShip(ctx context.Context, st *State, opt RunOptions) error {
 	}
 	go func() { errCh <- sh.Run(ctx) }()
 
-	if st.Mode == protocol.ModeCaptain {
+	if st.HostNest {
 		keys := map[string]struct{}{}
 		for _, k := range st.APIKeys {
 			keys[k] = struct{}{}
@@ -180,12 +187,10 @@ func runShip(ctx context.Context, st *State, opt RunOptions) error {
 		if listen == "" {
 			listen = protocol.DefaultCaptainUI
 		}
-		// Always bind Captain UI on UIAddr (default 127.0.0.1:7842).
-		// --expose-api enables /v1 on the same listener; APIAddr is advertise-only.
 		if st.ExposeAPI || opt.ExposeAPI {
-			log.Printf("Captain UI + API on http://%s", listen)
+			log.Printf("Fleet UI + API on http://%s", listen)
 		} else {
-			log.Printf("Captain UI on http://%s", listen)
+			log.Printf("Fleet UI on http://%s", listen)
 		}
 		srv := &http.Server{Addr: listen, Handler: handler, ReadHeaderTimeout: 10 * time.Second}
 		go func() {

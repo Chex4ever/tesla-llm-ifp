@@ -1,8 +1,8 @@
 # Runbook: Pirate Fleet ops
 
-## Captain-as-Nest
+## Host Nest
 
-Host Nest mode embeds Nest (`:7843` by default). Local ships should use that Nest. The ship also dials uplink Nests from catalog for multi-hop. Inference runs on every ship including Host Nest nodes.
+With **Host Nest** on, the ship embeds Nest (`:7843`) and the fleet UI. Local ships should use that Nest. Inference is independent (`Accept inference` flag) — a laptop can host Nest/UI without taking jobs.
 
 ## Public Nest
 

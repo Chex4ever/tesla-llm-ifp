@@ -55,7 +55,7 @@ func (s *Store) ReadyForModel(model string, opts ...PickOpts) []protocol.GossipP
 	}
 	var out []protocol.GossipPayload
 	for _, p := range s.List() {
-		if p.Mode == protocol.ModeCrowsNest || !p.RuntimeHealthy {
+		if p.Mode == protocol.ModeCrowsNest || !p.RuntimeHealthy || !p.AcceptsInfer() {
 			continue
 		}
 		if !hasAllTags(p.Tags, opt.RequireTags) {

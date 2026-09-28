@@ -10,8 +10,9 @@ const (
 	DefaultNestAddr  = "0.0.0.0:7843"
 	AgentVersion     = "0.3.0"
 
-	ModeWorker    = "worker"
-	ModeCaptain   = "captain"
+	ModeWorker    = "worker" // legacy; migrated to ship
+	ModeCaptain   = "captain" // legacy; migrated to ship + HostNest
+	ModeShip      = "ship"
 	ModeCrowsNest = "crowsnest"
 
 	MaxNestCatalog  = 32
@@ -82,14 +83,24 @@ type GossipPayload struct {
 	GPUName        string    `json:"gpu_name,omitempty"`
 	VRAMMb         int       `json:"vram_mb,omitempty"`
 	MaxVRAMMb      int       `json:"max_vram_mb,omitempty"` // capacity: will run models up to this
+	HostNest       bool      `json:"host_nest,omitempty"`
+	Infer          *bool     `json:"infer,omitempty"` // nil = true (legacy peers)
 	RuntimeHealthy bool      `json:"runtime_healthy"`
 	ExposeAPI      bool      `json:"expose_api"`
 	APIAdvertise   string    `json:"api_advertise,omitempty"`
-	NestURL        string    `json:"nest_url,omitempty"` // captain's local nest
+	NestURL        string    `json:"nest_url,omitempty"` // local nest when HostNest
 	NestsConnected []string  `json:"nests_connected,omitempty"`
 	Load           int       `json:"load"`
 	HMAC           string    `json:"hmac"`
 	TS             time.Time `json:"ts"`
+}
+
+// AcceptsInfer reports whether this peer wants inference jobs (default true).
+func (g GossipPayload) AcceptsInfer() bool {
+	if g.Infer == nil {
+		return true
+	}
+	return *g.Infer
 }
 
 type NestAdvert struct {

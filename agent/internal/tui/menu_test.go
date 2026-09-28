@@ -15,7 +15,7 @@ func TestBuildMenuDefaultCreateFleet(t *testing.T) {
 }
 
 func TestBuildMenuDefaultDeployAfterCaptain(t *testing.T) {
-	st := &agent.State{JoinSecret: "x", Mode: "captain", Name: "c"}
+	st := &agent.State{JoinSecret: "x", Mode: "ship", HostNest: true, Infer: true, Name: "c"}
 	items, idx := buildMenu(st)
 	if items[idx].ID != menuDeployNest {
 		t.Fatalf("default=%v want DeployNest", items[idx].ID)
@@ -24,21 +24,27 @@ func TestBuildMenuDefaultDeployAfterCaptain(t *testing.T) {
 
 func TestBuildMenuDefaultRunWhenHasNest(t *testing.T) {
 	st := &agent.State{
-		JoinSecret: "x", Mode: "captain", Name: "c",
+		JoinSecret: "x", Mode: "ship", HostNest: true, Infer: true, Name: "c",
 		Nests: []string{"wss://1.2.3.4/nest"},
 	}
 	items, idx := buildMenu(st)
 	if items[idx].ID != menuRun {
 		t.Fatalf("default=%v want Run", items[idx].ID)
 	}
-	found := false
+	foundCopy, foundInfer := false, false
 	for _, it := range items {
 		if it.ID == menuCopyJoin {
-			found = true
+			foundCopy = true
+		}
+		if it.ID == menuInfer {
+			foundInfer = true
 		}
 	}
-	if !found {
+	if !foundCopy {
 		t.Fatal("Copy join missing from menu")
+	}
+	if !foundInfer {
+		t.Fatal("Accept inference toggle missing")
 	}
 }
 

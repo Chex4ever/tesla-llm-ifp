@@ -2,7 +2,6 @@ package tui
 
 import (
 	"github.com/Chex4ever/pirate-fleet/agent/internal/agent"
-	"github.com/Chex4ever/pirate-fleet/agent/internal/protocol"
 )
 
 type menuID int
@@ -13,6 +12,7 @@ const (
 	menuJoinFleet
 	menuCopyJoin
 	menuHostNest
+	menuInfer
 	menuRun
 	menuHelp
 	menuQuit
@@ -40,15 +40,23 @@ func buildMenu(st *agent.State) (items []menuItem, defaultIdx int) {
 	}
 	if enrolled {
 		hostLabel := "Host Nest + UI: off"
-		hostHint := "enable local nest & panel"
+		hostHint := "local nest & fleet panel"
 		if hostNest {
 			hostLabel = "Host Nest + UI: on"
-			hostHint = "disable (peer-only ship)"
+			hostHint = "turn off (no local nest/UI)"
 		}
 		items = append(items, menuItem{ID: menuHostNest, Label: hostLabel, Hint: hostHint})
+
+		inferLabel := "Accept inference: off"
+		inferHint := "this PC will take LLM jobs"
+		if isInfer(st) {
+			inferLabel = "Accept inference: on"
+			inferHint = "console-only (no GPU jobs)"
+		}
+		items = append(items, menuItem{ID: menuInfer, Label: inferLabel, Hint: inferHint})
 	}
 	items = append(items,
-		menuItem{ID: menuRun, Label: "Run", Hint: "start ship (inference + nests)"},
+		menuItem{ID: menuRun, Label: "Run", Hint: "start ship"},
 		menuItem{ID: menuHelp, Label: "Help", Hint: ""},
 		menuItem{ID: menuQuit, Label: "Quit", Hint: ""},
 	)
@@ -58,8 +66,6 @@ func buildMenu(st *agent.State) (items []menuItem, defaultIdx int) {
 		defaultIdx = indexOfMenu(items, menuCreateFleet)
 	case hostNest && !hasNest:
 		defaultIdx = indexOfMenu(items, menuDeployNest)
-	case enrolled && hasNest:
-		defaultIdx = indexOfMenu(items, menuRun)
 	default:
 		defaultIdx = indexOfMenu(items, menuRun)
 	}
@@ -83,10 +89,13 @@ func isEnrolled(st *agent.State) bool {
 }
 
 func isHostNest(st *agent.State) bool {
-	return st != nil && st.JoinSecret != "" && st.Mode == protocol.ModeCaptain
+	return st != nil && st.JoinSecret != "" && st.HostNest
 }
 
-// isCaptain kept for deploy gate (needs Host Nest / fleet owner).
+func isInfer(st *agent.State) bool {
+	return st != nil && st.Infer
+}
+
 func isCaptain(st *agent.State) bool {
 	return isHostNest(st)
 }

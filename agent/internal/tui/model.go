@@ -112,11 +112,16 @@ func (m Model) View() string {
 	}
 
 	if isEnrolled(m.State) {
-		role := "Ship"
+		parts := []string{"Ship"}
 		if isHostNest(m.State) {
-			role = "Ship + Host Nest"
+			parts = append(parts, "Host Nest")
 		}
-		b.WriteString(okStyle.Render(role+": "+m.State.Name) + "\n")
+		if isInfer(m.State) {
+			parts = append(parts, "Infer")
+		} else {
+			parts = append(parts, "no-infer")
+		}
+		b.WriteString(okStyle.Render(strings.Join(parts, " · ")+": "+m.State.Name) + "\n")
 		if len(m.State.Tags) > 0 {
 			b.WriteString("Tags: " + strings.Join(m.State.Tags, ", ") + "\n")
 		}
@@ -172,14 +177,16 @@ func (m Model) modalHints() string {
 func (m Model) viewModal() string {
 	switch m.Modal {
 	case ModalHelp:
-		return boxStyle.Render(`One app for every PC
+		return boxStyle.Render(`One app — capabilities, not roles
 
-  1. Create fleet   (first PC — Host Nest on)
-  2. Deploy Nest    (optional public nest)
-  3. Copy join link / Invite from UI
-  4. Other PC: Join fleet → Run
+  Create fleet → Host Nest on (toggle Infer off on a laptop without GPU)
+  Join fleet   → paste pirate://join?…
+  Run          → start
 
-Host Nest + UI is a toggle — same binary always does inference + nest discovery.
+  Host Nest + UI  and  Accept inference  are independent.
+  Console PC: Host Nest on, Accept inference off.
+  GPU PC: Infer on; Host Nest optional.
+
 Nest TLS is self-signed. Password is never saved.`)
 
 	case ModalDeployProgress:

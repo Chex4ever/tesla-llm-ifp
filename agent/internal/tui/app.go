@@ -158,7 +158,22 @@ func (m Model) activateMenu(id menuID) (tea.Model, tea.Cmd) {
 		if on {
 			m.Log = okStyle.Render("Host Nest + UI enabled")
 		} else {
-			m.Log = okStyle.Render("Host Nest off — peer ship only")
+			m.Log = okStyle.Render("Host Nest off")
+		}
+		return m, nil
+	case menuInfer:
+		on := !isInfer(m.State)
+		st, err := agent.SetInfer(m.ConfigDir, on)
+		if err != nil {
+			m.Log = errStyle.Render(err.Error())
+			return m, nil
+		}
+		m.State = st
+		m.resetMenu()
+		if on {
+			m.Log = okStyle.Render("Accept inference on")
+		} else {
+			m.Log = okStyle.Render("Accept inference off — console / Nest only")
 		}
 		return m, nil
 	case menuRun:
@@ -420,12 +435,8 @@ func startShip(cfgDir string, st *agent.State) tea.Cmd {
 		if err != nil {
 			return logMsg(err.Error())
 		}
-		mode := st.Mode
-		if mode == "" {
-			mode = "worker"
-		}
-		args := []string{"run", "--mode=" + mode, "--config-dir", cfgDir}
-		if mode == "captain" {
+		args := []string{"run", "--mode=ship", "--config-dir", cfgDir}
+		if st.HostNest {
 			args = append(args, "--expose-api")
 		}
 		cmd := exec.Command(exe, args...)
@@ -434,8 +445,8 @@ func startShip(cfgDir string, st *agent.State) tea.Cmd {
 		if err := cmd.Start(); err != nil {
 			return logMsg(fmt.Sprintf("start: %v", err))
 		}
-		msg := fmt.Sprintf("Ship started (pid %d, mode=%s)", cmd.Process.Pid, mode)
-		if mode == "captain" {
+		msg := fmt.Sprintf("Ship started (pid %d, host_nest=%v infer=%v)", cmd.Process.Pid, st.HostNest, st.Infer)
+		if st.HostNest {
 			ui := "127.0.0.1:7842"
 			if st.UIAddr != "" {
 				ui = st.UIAddr

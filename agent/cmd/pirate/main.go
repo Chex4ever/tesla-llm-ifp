@@ -166,12 +166,12 @@ TUI (default):
   pirate
   pirate tui
 
-One app: Create/Join fleet → Run. Host Nest + UI is optional.
+One app: Create/Join → toggle Host Nest / Accept inference → Run.
 
 CLI:
   pirate join <pirate://join?…|pf1.…>
   pirate enroll --join-secret SECRET [--invite TOKEN] [--name NAME] [--tags a,b] [--max-vram-mb N]
-  pirate run [--mode=worker|captain|crowsnest] [--expose-api]
+  pirate run [--mode=ship|crowsnest] [--expose-api]
   pirate service install|start|stop|uninstall
   pirate version
 `, version)

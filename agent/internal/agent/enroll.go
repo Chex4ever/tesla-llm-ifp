@@ -16,7 +16,9 @@ type EnrollOptions struct {
 	Invite     string
 	Name       string
 	Nests      []string
-	Mode       string
+	Mode       string // optional legacy; prefer HostNest/Infer
+	HostNest   *bool
+	Infer      *bool
 	Tags       []string
 	MaxVRAMMb  int
 }
@@ -33,12 +35,20 @@ func Enroll(opt EnrollOptions) error {
 		st.NodeID = uuid.NewString()
 	}
 	st.JoinSecret = opt.JoinSecret
-	if opt.Mode != "" {
-		st.Mode = opt.Mode
+
+	hostNest := false
+	infer := true
+	if opt.HostNest != nil {
+		hostNest = *opt.HostNest
+	} else if opt.Mode == protocol.ModeCaptain {
+		hostNest = true
+	} else if opt.Mode == protocol.ModeWorker {
+		hostNest = false
 	}
-	if st.Mode == "" {
-		st.Mode = protocol.ModeWorker
+	if opt.Infer != nil {
+		infer = *opt.Infer
 	}
+
 	nests := append([]string{}, opt.Nests...)
 	name := opt.Name
 	tags := append([]string{}, opt.Tags...)
@@ -52,8 +62,8 @@ func Enroll(opt EnrollOptions) error {
 			name = inv.Name
 		}
 		nests = append(nests, inv.Nests...)
-		if inv.ModeHint != "" && opt.Mode == "" {
-			st.Mode = inv.ModeHint
+		if opt.HostNest == nil && inv.ModeHint == protocol.ModeCaptain {
+			hostNest = true
 		}
 		if len(tags) == 0 && len(inv.Tags) > 0 {
 			tags = append([]string{}, inv.Tags...)
@@ -62,6 +72,11 @@ func Enroll(opt EnrollOptions) error {
 			maxVRAM = inv.MaxVRAMMb
 		}
 	}
+
+	st.Mode = protocol.ModeShip
+	st.HostNest = hostNest
+	st.Infer = infer
+
 	if name != "" {
 		st.Name = name
 	}
@@ -81,8 +96,8 @@ func Enroll(opt EnrollOptions) error {
 	}
 	env := fmt.Sprintf("JOIN_SECRET=%s\nMODE=%s\n", st.JoinSecret, st.Mode)
 	_ = os.WriteFile(DefaultConfigPath(), []byte(env), 0o600)
-	fmt.Printf("enrolled node %s (%s) mode=%s nests=%s tags=%s\n",
-		st.NodeID, st.Name, st.Mode, strings.Join(st.Nests, ","), strings.Join(st.Tags, ","))
+	fmt.Printf("enrolled node %s (%s) host_nest=%v infer=%v nests=%s tags=%s\n",
+		st.NodeID, st.Name, st.HostNest, st.Infer, strings.Join(st.Nests, ","), strings.Join(st.Tags, ","))
 	return nil
 }
 
@@ -115,3 +130,5 @@ func uniqueTags(tags []string) []string {
 	}
 	return out
 }
+
+func boolPtr(v bool) *bool { return &v }

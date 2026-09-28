@@ -2,7 +2,7 @@
 
 Decentralized self-hosted LLM mesh. No control-plane brain on a VPS.
 
-**One Go binary.** Every PC is a **ship** (inference + Nest discovery). **Host Nest + UI** is an optional toggle — not a second app.
+**One Go binary.** Every PC is a **ship**. **Host Nest + UI** and **Accept inference** are independent flags — not two apps or exclusive roles.
 
 > [!WARNING]
 > **Work in Progress (WIP)**  
@@ -10,15 +10,21 @@ Decentralized self-hosted LLM mesh. No control-plane brain on a VPS.
 
 ---
 
-## Roles
+## Capabilities
 
-| Capability | What it does |
-|------------|----------------|
-| **Ship** (always) | Ollama/vLLM inference, gossip, Nest catalog by RTT |
-| **Host Nest + UI** | Local Nest (`:7843`) + panel at `http://127.0.0.1:7842` |
-| **Crow's Nest** | Standalone / public Nest (`run --mode=crowsnest`) |
+| Flag | What it does |
+|------|----------------|
+| **Ship** (always) | Gossip, Nest catalog by RTT |
+| **Host Nest + UI** | Local Nest + panel at `http://127.0.0.1:7842` |
+| **Accept inference** | Take LLM jobs via Ollama/vLLM |
 
-LAN ships prefer their Host Nest. Public Nest is an uplink between sites. Nest catalog is gossip-driven (multi-hop).
+| Scenario | Host Nest | Infer |
+|----------|-----------|-------|
+| Laptop console (no GPU) | on | off |
+| GPU PC + panel | on | on |
+| GPU worker only | off | on |
+
+Standalone public Nest: `pirate run --mode=crowsnest`.
 
 ---
 
@@ -29,14 +35,12 @@ go build -o bin/pirate ./agent/cmd/pirate
 ./bin/pirate          # no args → TUI
 ```
 
-1. **Create fleet** — `JOIN_SECRET` generated; Host Nest on.
+1. **Create fleet** — Host Nest on (toggle **Accept inference off** on a GPU-less laptop).
 2. **Deploy Nest** — VPS host/IP + root password (self-signed TLS).
-3. **Copy join link** — share `pirate://join?…` with another PC.
-4. Other PC: **Join fleet** → paste link → **Run**.
+3. **Copy join link** — share `pirate://join?…`.
+4. Other PC: **Join fleet** → paste → **Run**.
 
-Same app everywhere. Toggle **Host Nest + UI** if this machine should also host a Nest/panel.
-
-Invite from the UI (after **Run** with Host Nest): name + tags + optional max VRAM → **Copy join link**. Ships filter by tag / model / VRAM.
+Invite from the UI: name + tags + max VRAM → **Copy join link**. Filter ships by tag / model / VRAM.
 
 Details: [docs/onboarding.md](docs/onboarding.md) · [docs/crowsnest.md](docs/crowsnest.md).
 
@@ -47,8 +51,7 @@ Details: [docs/onboarding.md](docs/onboarding.md) · [docs/crowsnest.md](docs/cr
 ```bash
 pirate join 'pirate://join?secret=…&nest=wss://HOST/nest'
 pirate enroll --join-secret SECRET [--invite TOKEN] [--tags office,gpu]
-pirate run                          # mode from state
-pirate run --mode=captain --expose-api
+pirate run                          # flags from state
 pirate run --mode=crowsnest --listen :7843
 ```
 
@@ -64,13 +67,13 @@ curl http://127.0.0.1:8080/v1/chat/completions \
   -d '{"model":"llama3.2:1b","messages":[{"role":"user","content":"ahoy"}]}'
 ```
 
-Optional routing: header `X-Pirate-Tags: office` or JSON field `pirate_tags`.
+Optional: `X-Pirate-Tags: office` or JSON `pirate_tags`.
 
 ---
 
 ## Public Nest (manual)
 
-Preferred: TUI → **Deploy Nest**. Manual Docker: [deploy/crowsnest/README.md](deploy/crowsnest/README.md).
+Preferred: TUI → **Deploy Nest**. Manual: [deploy/crowsnest/README.md](deploy/crowsnest/README.md).
 
 Ops: [docs/runbooks/pirate-fleet.md](docs/runbooks/pirate-fleet.md).
 
@@ -80,8 +83,7 @@ Ops: [docs/runbooks/pirate-fleet.md](docs/runbooks/pirate-fleet.md).
 
 ```bash
 go build -o bin/pirate ./agent/cmd/pirate
+# Windows: go build -o bin/pirate.exe ./agent/cmd/pirate
 ```
-```powershell
-go build -o bin/pirate.exe ./agent/cmd/pirate
-```
+
 Legacy Compose under `deploy/compose.yml` / `apps/fleet-api` is **not** the Pirate Fleet path.

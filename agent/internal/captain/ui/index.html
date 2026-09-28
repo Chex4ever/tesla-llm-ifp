@@ -165,7 +165,10 @@
         const tags = (p.tags || []).map(t => `<span class="badge">${t}</span>`).join('') || '—';
         return `<tr>
           <td><strong>${p.name||p.node_id.slice(0,8)}</strong><div class="mono muted">${p.node_id}</div></td>
-          <td><span class="badge ${p.runtime_healthy?'ok':''}">${p.mode}</span>${p.expose_api?' · API':''}</td>
+          <td><span class="badge ${p.runtime_healthy?'ok':''}">${p.mode||'ship'}</span>
+            ${p.host_nest?'<span class="badge active">nest</span>':''}
+            ${p.infer===false?'<span class="badge">no-infer</span>':'<span class="badge ok">infer</span>'}
+            ${p.expose_api?' · API':''}</td>
           <td>${tags}</td>
           <td>${gpu}</td>
           <td class="mono">${(p.models_ready||[]).join(', ')||'—'}</td>

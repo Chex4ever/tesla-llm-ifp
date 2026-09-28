@@ -5,8 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
-
-	"github.com/Chex4ever/pirate-fleet/agent/internal/protocol"
 )
 
 // BecomeCaptainOptions configures first-run fleet creation (Host Nest + UI).
@@ -17,7 +15,7 @@ type BecomeCaptainOptions struct {
 	Nests      []string
 }
 
-// BecomeCaptain generates a fleet secret if needed and enrolls with Host Nest mode.
+// BecomeCaptain generates a fleet secret and enrolls with Host Nest on (Infer stays on by default).
 func BecomeCaptain(opt BecomeCaptainOptions) (*State, error) {
 	secret := opt.JoinSecret
 	if secret == "" {
@@ -36,7 +34,8 @@ func BecomeCaptain(opt BecomeCaptainOptions) (*State, error) {
 		ConfigDir:  opt.ConfigDir,
 		JoinSecret: secret,
 		Name:       name,
-		Mode:       protocol.ModeCaptain,
+		HostNest:   boolPtr(true),
+		Infer:      boolPtr(true),
 		Nests:      opt.Nests,
 	}); err != nil {
 		return nil, err
@@ -57,7 +56,7 @@ func AddNestURL(configDir, nestURL string) (*State, error) {
 	return st, nil
 }
 
-// SetHostNest enables or disables local Nest + UI (captain extras).
+// SetHostNest enables or disables local Nest + UI without touching Infer.
 func SetHostNest(configDir string, on bool) (*State, error) {
 	st, err := LoadOrInitState(configDir)
 	if err != nil {
@@ -66,11 +65,24 @@ func SetHostNest(configDir string, on bool) (*State, error) {
 	if st.JoinSecret == "" {
 		return nil, fmt.Errorf("not enrolled: create or join a fleet first")
 	}
-	if on {
-		st.Mode = protocol.ModeCaptain
-	} else {
-		st.Mode = protocol.ModeWorker
+	st.HostNest = on
+	st.Mode = "ship"
+	if err := SaveState(configDir, st); err != nil {
+		return nil, err
 	}
+	return st, nil
+}
+
+// SetInfer enables or disables accepting inference jobs without touching HostNest.
+func SetInfer(configDir string, on bool) (*State, error) {
+	st, err := LoadOrInitState(configDir)
+	if err != nil {
+		return nil, err
+	}
+	if st.JoinSecret == "" {
+		return nil, fmt.Errorf("not enrolled: create or join a fleet first")
+	}
+	st.Infer = on
 	if err := SaveState(configDir, st); err != nil {
 		return nil, err
 	}
@@ -78,7 +90,7 @@ func SetHostNest(configDir string, on bool) (*State, error) {
 }
 
 // JoinFromLink parses a pirate://join link and enrolls into the fleet.
-// With invite → peer ship (worker). Without invite → Host Nest (captain) for second-site.
+// With invite → peer ship. Without invite → Host Nest on (second site).
 func JoinFromLink(configDir, link, name string) (*State, error) {
 	j, err := ParseJoinLink(link)
 	if err != nil {
@@ -88,16 +100,14 @@ func JoinFromLink(configDir, link, name string) (*State, error) {
 	if j.Nest != "" {
 		nests = uniqueNests([]string{j.Nest}, nests)
 	}
-	mode := protocol.ModeCaptain
-	if j.Invite != "" {
-		mode = protocol.ModeWorker
-	}
+	hostNest := j.Invite == ""
 	if err := Enroll(EnrollOptions{
 		ConfigDir:  configDir,
 		JoinSecret: j.Secret,
 		Invite:     j.Invite,
 		Name:       name,
-		Mode:       mode,
+		HostNest:   boolPtr(hostNest),
+		Infer:      boolPtr(true),
 		Nests:      nests,
 	}); err != nil {
 		return nil, err

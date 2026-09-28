@@ -18,8 +18,8 @@ func TestBecomeCaptainGeneratesSecret(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if st.Mode != "captain" {
-		t.Fatalf("mode=%q", st.Mode)
+	if st.Mode != "ship" || !st.HostNest || !st.Infer {
+		t.Fatalf("mode=%q host_nest=%v infer=%v", st.Mode, st.HostNest, st.Infer)
 	}
 	if st.Name != "cap-test" {
 		t.Fatalf("name=%q", st.Name)
@@ -48,8 +48,8 @@ func TestJoinFromLinkAndAddNest(t *testing.T) {
 	if st.JoinSecret != secret {
 		t.Fatalf("secret mismatch")
 	}
-	if st.Mode != "captain" {
-		t.Fatalf("mode=%q", st.Mode)
+	if !st.HostNest || st.Mode != "ship" {
+		t.Fatalf("mode=%q host_nest=%v", st.Mode, st.HostNest)
 	}
 	if len(st.Nests) == 0 || st.Nests[0] != nest {
 		t.Fatalf("nests=%v", st.Nests)
@@ -81,8 +81,8 @@ func TestJoinFromLinkWithInvite(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if st.Mode != "worker" {
-		t.Fatalf("mode=%q want worker", st.Mode)
+	if st.HostNest || st.Mode != "ship" || !st.Infer {
+		t.Fatalf("mode=%q host_nest=%v infer=%v", st.Mode, st.HostNest, st.Infer)
 	}
 	if st.Name != "office-pc" {
 		t.Fatalf("name=%q", st.Name)
@@ -92,9 +92,13 @@ func TestJoinFromLinkWithInvite(t *testing.T) {
 	}
 }
 
-func TestSetHostNest(t *testing.T) {
+func TestSetHostNestKeepsInfer(t *testing.T) {
 	dir := t.TempDir()
 	st, err := BecomeCaptain(BecomeCaptainOptions{ConfigDir: dir, Name: "c"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	st, err = SetInfer(dir, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,14 +106,37 @@ func TestSetHostNest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if st.Mode != "worker" {
-		t.Fatalf("mode=%q", st.Mode)
+	if st.HostNest || st.Infer {
+		t.Fatalf("host_nest=%v infer=%v", st.HostNest, st.Infer)
 	}
 	st, err = SetHostNest(dir, true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if st.Mode != "captain" {
-		t.Fatalf("mode=%q", st.Mode)
+	if !st.HostNest || st.Infer {
+		t.Fatalf("host_nest=%v infer=%v want host on infer off", st.HostNest, st.Infer)
+	}
+}
+
+func TestMigrateLegacyCaptainState(t *testing.T) {
+	dir := t.TempDir()
+	path := StatePath(dir)
+	_ = os.MkdirAll(dir, 0o755)
+	raw := `{
+  "node_id": "n1",
+  "name": "old",
+  "join_secret": "aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899",
+  "nests": [],
+  "mode": "captain"
+}`
+	if err := os.WriteFile(path, []byte(raw), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	st, err := LoadOrInitState(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.Mode != "ship" || !st.HostNest || !st.Infer {
+		t.Fatalf("migrated: mode=%q host=%v infer=%v", st.Mode, st.HostNest, st.Infer)
 	}
 }
