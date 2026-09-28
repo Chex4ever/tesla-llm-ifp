@@ -15,7 +15,7 @@ Wait for propagation (`dig +short fleet.teslant.ru`).
 ## Restore Postgres
 
 ```bash
-cd /opt/tesla-llm-ifp/deploy
+cd /opt/pirate-fleet/deploy
 docker compose exec -T postgres pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > backup.sql
 # restore:
 cat backup.sql | docker compose exec -T postgres psql -U "$POSTGRES_USER" "$POSTGRES_DB"

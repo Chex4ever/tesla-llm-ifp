@@ -16,8 +16,8 @@ derp:
   server:
     enabled: true
     region_id: 999
-    region_code: tesla
-    region_name: Tesla LLM DERP
+    region_code: pirate
+    region_name: Pirate Fleet DERP
     stun_listen_addr: 0.0.0.0:3478
   urls: []
   auto_update_enabled: false

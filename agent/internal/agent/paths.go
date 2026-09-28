@@ -12,15 +12,15 @@ func DefaultConfigDir() string {
 		if base == "" {
 			base = `C:\ProgramData`
 		}
-		return filepath.Join(base, "TeslaAgent")
+		return filepath.Join(base, "PirateFleet")
 	}
 	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
-		return filepath.Join(xdg, "tesla-agent")
+		return filepath.Join(xdg, "pirate-fleet")
 	}
 	if home, err := os.UserHomeDir(); err == nil {
-		return filepath.Join(home, ".config", "tesla-agent")
+		return filepath.Join(home, ".config", "pirate-fleet")
 	}
-	return "/etc/tesla-agent"
+	return "/etc/pirate-fleet"
 }
 
 func DefaultConfigPath() string {

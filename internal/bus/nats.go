@@ -8,11 +8,11 @@ import (
 )
 
 const (
-	SubjectHeartbeat   = "tesla.agent.heartbeat"
-	SubjectEnsureModel = "tesla.agent.ensure_model"
-	SubjectInferReq    = "tesla.infer.request"
-	SubjectInferResp   = "tesla.infer.response."
-	StreamName         = "TESLA"
+	SubjectHeartbeat   = "pirate.agent.heartbeat"
+	SubjectEnsureModel = "pirate.agent.ensure_model"
+	SubjectInferReq    = "pirate.infer.request"
+	SubjectInferResp   = "pirate.infer.response."
+	StreamName         = "PIRATE"
 )
 
 // InferSubject returns the NATS subject for a node.
@@ -22,7 +22,7 @@ func InferSubject(nodeID string) string {
 
 func Connect(url, token string) (*nats.Conn, nats.JetStreamContext, error) {
 	opts := []nats.Option{
-		nats.Name("tesla-llm"),
+		nats.Name("pirate-fleet"),
 		nats.Timeout(10 * time.Second),
 		nats.ReconnectWait(2 * time.Second),
 		nats.MaxReconnects(-1),
@@ -41,7 +41,7 @@ func Connect(url, token string) (*nats.Conn, nats.JetStreamContext, error) {
 	}
 	_, _ = js.AddStream(&nats.StreamConfig{
 		Name:     StreamName,
-		Subjects: []string{"tesla.>"},
+		Subjects: []string{"pirate.>"},
 		Storage:  nats.FileStorage,
 		MaxAge:   24 * time.Hour,
 	})

@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pirate Fleet — Captain</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <title>Pirate Fleet</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     :root {
@@ -16,98 +15,250 @@
     body { margin: 0; font-family: var(--font); color: var(--text);
       background: radial-gradient(900px 500px at 10% -10%, rgba(245,158,11,.12), transparent),
                   linear-gradient(180deg, #0b1220, #070b14); min-height: 100vh; }
-    header { padding: 1.5rem 2rem; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+    header { padding: 1.5rem 2rem; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .75rem; }
     h1 { margin: 0; font-size: 1.35rem; } h1 span { color: var(--accent); }
     main { padding: 1.5rem 2rem; display: grid; gap: 1rem; }
     .panel { background: rgba(20,32,51,.85); border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.2rem; }
     .muted { color: var(--muted); } .mono { font-family: var(--mono); font-size: .85rem; }
-    table { width: 100%; border-collapse: collapse; } th, td { text-align: left; padding: .65rem .4rem; border-bottom: 1px solid var(--line); }
+    table { width: 100%; border-collapse: collapse; } th, td { text-align: left; padding: .65rem .4rem; border-bottom: 1px solid var(--line); vertical-align: top; }
     th { color: var(--muted); font-weight: 500; font-size: .85rem; }
-    button, input { font: inherit; border-radius: 10px; border: 1px solid var(--line); background: #0b1220; color: var(--text); padding: .55rem .85rem; }
+    button, input, select { font: inherit; border-radius: 10px; border: 1px solid var(--line); background: #0b1220; color: var(--text); padding: .55rem .85rem; }
     button { cursor: pointer; background: linear-gradient(135deg, #d97706, #f59e0b); color: #1c1003; border: none; font-weight: 600; }
+    button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
     .row { display: flex; gap: .6rem; flex-wrap: wrap; align-items: end; }
-    .badge { display: inline-block; padding: .1rem .5rem; border-radius: 999px; border: 1px solid var(--line); font-size: .75rem; }
-    .badge.ok { color: var(--ok); } .pre { white-space: pre-wrap; background: #0b1220; border-radius: 10px; padding: .8rem; border: 1px solid var(--line); }
+    .badge { display: inline-block; padding: .1rem .5rem; border-radius: 999px; border: 1px solid var(--line); font-size: .75rem; margin: .1rem; cursor: pointer; }
+    .badge.ok { color: var(--ok); } .badge.active { color: var(--accent); border-color: rgba(245,158,11,.4); }
+    .pre { white-space: pre-wrap; background: #0b1220; border-radius: 10px; padding: .8rem; border: 1px solid var(--line); word-break: break-all; }
     label { display: block; color: var(--muted); font-size: .8rem; margin-bottom: .25rem; }
+    details { margin-top: .75rem; color: var(--muted); }
+    .chips { display: flex; flex-wrap: wrap; gap: .35rem; margin: .5rem 0; }
   </style>
 </head>
 <body>
   <header>
-    <h1>Pirate <span>Fleet</span> · Captain</h1>
+    <h1>Pirate <span>Fleet</span></h1>
     <div class="muted" id="meta">loading…</div>
   </header>
   <main>
     <section class="panel">
-      <h3 style="margin-top:0">Add Deckhand (invite)</h3>
+      <h3 style="margin-top:0">My Crow's Nest</h3>
+      <p class="muted">Local Nest for LAN ships. You also uplink to other Nests for the wider fleet.</p>
+      <div class="pre mono" id="myNest">—</div>
+    </section>
+    <section class="panel">
+      <h3 style="margin-top:0">Invite ship</h3>
+      <p class="muted">Same app on the other PC: <strong>pirate → Join fleet → paste link → Run</strong></p>
       <div class="row">
-        <div><label>Name</label><input id="invName" value="deckhand-01" /></div>
+        <div><label>Name</label><input id="invName" value="ship-01" /></div>
+        <div><label>Tags (comma)</label><input id="invTags" placeholder="office, fat-pipe" /></div>
+        <div><label>Max VRAM MB</label><input id="invVRAM" type="number" placeholder="auto" style="width:110px" /></div>
         <button onclick="createInvite()">Create invite</button>
       </div>
-      <div id="inviteOut" class="pre" style="margin-top:0.75rem; display:none"></div>
+      <div id="inviteOut" style="margin-top:0.75rem; display:none">
+        <label>Join link</label>
+        <div class="pre mono" id="joinLink"></div>
+        <div class="row" style="margin-top:.5rem">
+          <button onclick="copyJoin()">Copy join link</button>
+          <span class="muted" id="copied"></span>
+        </div>
+        <details>
+          <summary>Advanced CLI</summary>
+          <div class="pre mono" id="inviteAdv"></div>
+        </details>
+      </div>
     </section>
     <section class="panel">
-      <h3 style="margin-top:0">Crow's Nests</h3>
-      <p class="muted">Zero routers for NAT. Default + your own — fleet survives if one Nest dies.</p>
+      <h3 style="margin-top:0">Nest catalog</h3>
+      <p class="muted">Dynamic — new Host Nests appear via gossip. Active = currently connected (nearest by RTT).</p>
       <div class="row">
         <div style="flex:1"><label>Add Nest URL</label><input id="nestURL" placeholder="wss://nest.example.com/nest" style="width:100%" /></div>
-        <button onclick="addNest()">Add</button>
+        <button onclick="addNest()">Add &amp; advertise</button>
       </div>
-      <ul id="nests" class="mono"></ul>
+      <table style="margin-top:1rem">
+        <thead><tr><th>URL</th><th>Kind</th><th>RTT</th><th>Status</th></tr></thead>
+        <tbody id="nestRows"></tbody>
+      </table>
     </section>
     <section class="panel">
-      <h3 style="margin-top:0">Ships (gossip roster)</h3>
+      <h3 style="margin-top:0">Ships</h3>
+      <div class="row">
+        <div><label>Filter tag</label><input id="fTag" placeholder="office" oninput="renderPeers()" /></div>
+        <div><label>Filter model</label><input id="fModel" placeholder="llama3.2" oninput="renderPeers()" /></div>
+        <div><label>VRAM ≥ MB</label><input id="fVRAM" type="number" placeholder="0" style="width:100px" oninput="renderPeers()" /></div>
+        <button class="ghost" type="button" onclick="clearFilters()">Clear</button>
+      </div>
+      <div class="chips" id="tagChips"></div>
+      <div class="chips" id="modelChips"></div>
       <table>
-        <thead><tr><th>Name</th><th>Mode</th><th>GPU</th><th>Models</th><th>Load</th><th></th></tr></thead>
+        <thead><tr><th>Name</th><th>Mode</th><th>Tags</th><th>GPU / VRAM</th><th>Models</th><th>Nest</th><th></th></tr></thead>
         <tbody id="peers"></tbody>
       </table>
     </section>
     <section class="panel">
-      <h3 style="margin-top:0">Ensure model on ship</h3>
+      <h3 style="margin-top:0">Ensure model</h3>
       <div class="row">
-        <div><label>Node ID</label><input id="ensNode" class="mono" style="width:220px" /></div>
-        <div><label>Ollama tag / model</label><input id="ensModel" value="llama3.2:1b" /></div>
+        <div><label>Ship</label>
+          <select id="ensNode" style="min-width:220px"></select>
+        </div>
+        <div><label>Ollama tag</label><input id="ensModel" value="llama3.2:1b" /></div>
+        <div><label>Min VRAM MB</label><input id="ensMinVRAM" type="number" placeholder="0" style="width:100px" /></div>
         <button onclick="ensureModel()">Push</button>
       </div>
     </section>
   </main>
   <script>
-    async function refresh() {
-      const res = await fetch('/api/v1/peers');
-      const data = await res.json();
-      document.getElementById('meta').textContent = (data.peers||[]).length + ' peers · ' + (data.nests||[]).length + ' nests';
-      const ul = document.getElementById('nests');
-      ul.innerHTML = (data.nests||[]).map(n => '<li>'+n+'</li>').join('') || '<li class="muted">none</li>';
-      const tb = document.getElementById('peers');
-      tb.innerHTML = (data.peers||[]).map(p => `<tr>
-        <td><strong>${p.name||p.node_id.slice(0,8)}</strong><div class="mono muted">${p.node_id}</div></td>
-        <td><span class="badge ${p.runtime_healthy?'ok':''}">${p.mode}</span>${p.expose_api?' · API':''}</td>
-        <td>${p.gpu_name||'—'} ${p.vram_mb? '('+p.vram_mb+'MB)':''}</td>
-        <td class="mono">${(p.models_ready||[]).join(', ')||'—'}</td>
-        <td>${p.load||0}</td>
-        <td><button onclick="document.getElementById('ensNode').value='${p.node_id}'">Select</button></td>
-      </tr>`).join('') || '<tr><td colspan="6" class="muted">No ships yet — create an invite</td></tr>';
+    let active = [];
+    let allPeers = [];
+    let lastJoin = '';
+
+    function parseTags(s) {
+      return (s || '').split(',').map(t => t.trim()).filter(Boolean);
     }
+
+    function clearFilters() {
+      document.getElementById('fTag').value = '';
+      document.getElementById('fModel').value = '';
+      document.getElementById('fVRAM').value = '';
+      renderPeers();
+    }
+
+    function filteredPeers() {
+      const tag = document.getElementById('fTag').value.trim().toLowerCase();
+      const model = document.getElementById('fModel').value.trim().toLowerCase();
+      const vmin = parseInt(document.getElementById('fVRAM').value, 10) || 0;
+      return allPeers.filter(p => {
+        if (tag) {
+          const tags = (p.tags || []).map(t => t.toLowerCase());
+          if (!tags.includes(tag)) return false;
+        }
+        if (model) {
+          const models = (p.models_ready || []).map(m => m.toLowerCase());
+          if (!models.some(m => m.includes(model))) return false;
+        }
+        if (vmin > 0) {
+          const cap = p.max_vram_mb || p.vram_mb || 0;
+          if (cap > 0 && cap < vmin) return false;
+        }
+        return true;
+      });
+    }
+
+    function renderChips() {
+      const tags = new Set(), models = new Set();
+      allPeers.forEach(p => {
+        (p.tags || []).forEach(t => tags.add(t));
+        (p.models_ready || []).forEach(m => models.add(m));
+      });
+      document.getElementById('tagChips').innerHTML = [...tags].map(t =>
+        `<span class="badge" onclick="document.getElementById('fTag').value='${t}';renderPeers()">${t}</span>`
+      ).join('') || '<span class="muted">No tags yet</span>';
+      document.getElementById('modelChips').innerHTML = [...models].map(m =>
+        `<span class="badge" onclick="document.getElementById('fModel').value='${m}';renderPeers()">${m}</span>`
+      ).join('') || '<span class="muted">No models yet</span>';
+    }
+
+    function renderPeers() {
+      const peers = filteredPeers();
+      document.getElementById('peers').innerHTML = peers.map(p => {
+        const cap = p.max_vram_mb || p.vram_mb || 0;
+        const gpu = (p.gpu_name || '—') + (cap ? ` (${cap} MB)` : '');
+        const tags = (p.tags || []).map(t => `<span class="badge">${t}</span>`).join('') || '—';
+        return `<tr>
+          <td><strong>${p.name||p.node_id.slice(0,8)}</strong><div class="mono muted">${p.node_id}</div></td>
+          <td><span class="badge ${p.runtime_healthy?'ok':''}">${p.mode}</span>${p.expose_api?' · API':''}</td>
+          <td>${tags}</td>
+          <td>${gpu}</td>
+          <td class="mono">${(p.models_ready||[]).join(', ')||'—'}</td>
+          <td class="mono muted">${p.nest_url|| (p.nests_connected||[])[0] || '—'}</td>
+          <td><button onclick="selectShip('${p.node_id}')">Select</button></td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="7" class="muted">No ships match filters</td></tr>';
+
+      const sel = document.getElementById('ensNode');
+      const cur = sel.value;
+      sel.innerHTML = peers.map(p =>
+        `<option value="${p.node_id}">${p.name||p.node_id.slice(0,8)}</option>`
+      ).join('') || '<option value="">—</option>';
+      if (cur && [...sel.options].some(o => o.value === cur)) sel.value = cur;
+    }
+
+    function selectShip(id) {
+      document.getElementById('ensNode').value = id;
+    }
+
+    async function refresh() {
+      const [peersRes, nestsRes] = await Promise.all([
+        fetch('/api/v1/peers').then(r => r.json()),
+        fetch('/api/v1/nests').then(r => r.json()),
+      ]);
+      active = nestsRes.active || [];
+      allPeers = peersRes.peers || [];
+      document.getElementById('myNest').textContent = nestsRes.my_nest || peersRes.my_nest || '—';
+      document.getElementById('meta').textContent =
+        allPeers.length + ' ships · ' + (nestsRes.catalog||[]).length + ' nests · ' + active.length + ' active';
+      const nestRows = document.getElementById('nestRows');
+      nestRows.innerHTML = (nestsRes.catalog||[]).map(e => {
+        const url = e.advert?.url || '';
+        const kind = e.advert?.kind || '—';
+        const rtt = e.rtt_ms || 0;
+        const isActive = e.active || active.includes(url);
+        return `<tr>
+          <td class="mono">${url}</td>
+          <td>${kind}</td>
+          <td>${rtt ? Math.round(rtt)+' ms' : '—'}</td>
+          <td>${isActive ? '<span class="badge active">active</span>' : (e.reachable ? '<span class="badge ok">known</span>' : '<span class="badge">down</span>')}</td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="4" class="muted">No nests in catalog</td></tr>';
+      renderChips();
+      renderPeers();
+    }
+
     async function createInvite() {
       const name = document.getElementById('invName').value;
-      const res = await fetch('/api/v1/invites', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name}) });
+      const tags = parseTags(document.getElementById('invTags').value);
+      const max_vram_mb = parseInt(document.getElementById('invVRAM').value, 10) || 0;
+      const res = await fetch('/api/v1/invites', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({name, tags, max_vram_mb})
+      });
       const data = await res.json();
-      const el = document.getElementById('inviteOut');
-      el.style.display = 'block';
-      el.textContent = 'Token:\n' + data.token + '\n\n' + (data.instructions?.enroll||'') + '\n' + (data.instructions?.run||'');
+      lastJoin = data.join_link || '';
+      document.getElementById('inviteOut').style.display = 'block';
+      document.getElementById('joinLink').textContent = lastJoin;
+      document.getElementById('inviteAdv').textContent =
+        (data.instructions?.enroll||'') + '\n' + (data.instructions?.run||'') +
+        '\n\nToken:\n' + (data.token||'');
     }
+
+    async function copyJoin() {
+      if (!lastJoin) return;
+      await navigator.clipboard.writeText(lastJoin);
+      document.getElementById('copied').textContent = 'copied';
+      setTimeout(() => document.getElementById('copied').textContent = '', 1500);
+    }
+
     async function addNest() {
       const url = document.getElementById('nestURL').value;
       await fetch('/api/v1/nests', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url}) });
       document.getElementById('nestURL').value = '';
       refresh();
     }
+
     async function ensureModel() {
       const node_id = document.getElementById('ensNode').value;
       const model_id = document.getElementById('ensModel').value;
-      await fetch('/api/v1/ensure-model', { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ node_id, model_id, ollama_tag: model_id, format: 'ollama' }) });
+      const min_vram_mb = parseInt(document.getElementById('ensMinVRAM').value, 10) || 0;
+      if (!node_id) { alert('Select a ship'); return; }
+      const res = await fetch('/api/v1/ensure-model', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ node_id, model_id, ollama_tag: model_id, format: 'ollama', min_vram_mb }) });
+      if (!res.ok) {
+        const t = await res.text();
+        alert('Ensure failed: ' + t);
+        return;
+      }
       alert('EnsureModel sent');
     }
+
     refresh(); setInterval(refresh, 5000);
   </script>
 </body>

@@ -14,6 +14,6 @@ upload() {
     "mc alias set local http://minio:9000 \$MINIO_ROOT_USER \$MINIO_ROOT_PASSWORD && mc cp /binaries/$src local/\$MINIO_BUCKET_AGENTS/$dest"
 }
 
-upload tesla-agent.exe windows/tesla-agent.exe
-upload tesla-agent linux/tesla-agent
+upload pirate.exe windows/pirate.exe
+upload pirate linux/pirate
 echo "Agents uploaded."

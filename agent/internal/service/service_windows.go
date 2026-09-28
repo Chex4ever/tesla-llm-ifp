@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-const serviceName = "TeslaAgent"
+const serviceName = "PirateFleet"
 
 func Install(configDir string) error {
 	exe, err := os.Executable()
@@ -20,7 +20,7 @@ func Install(configDir string) error {
 	if err != nil {
 		return err
 	}
-	binPath := filepath.Join(configDir, "tesla-agent.exe")
+	binPath := filepath.Join(configDir, "pirate.exe")
 	_ = os.MkdirAll(configDir, 0o755)
 	in, err := os.ReadFile(exe)
 	if err != nil {
@@ -29,13 +29,13 @@ func Install(configDir string) error {
 	if err := os.WriteFile(binPath, in, 0o755); err != nil {
 		return err
 	}
-	bin := fmt.Sprintf(`"%s" run --config "%s"`, binPath, filepath.Join(configDir, "agent.env"))
-	cmd := exec.Command("sc", "create", serviceName, "binPath=", bin, "start=", "auto", "DisplayName=", "Tesla LLM Agent")
+	bin := fmt.Sprintf(`"%s" run --config-dir "%s"`, binPath, configDir)
+	cmd := exec.Command("sc", "create", serviceName, "binPath=", bin, "start=", "auto", "DisplayName=", "Pirate Fleet")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("sc create: %v (%s)", err, string(out))
 	}
-	_, _ = exec.Command("sc", "description", serviceName, "Tesla LLM distributed inference agent").CombinedOutput()
+	_, _ = exec.Command("sc", "description", serviceName, "Pirate Fleet ship agent").CombinedOutput()
 	return nil
 }
 

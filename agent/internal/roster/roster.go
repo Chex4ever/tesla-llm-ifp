@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Chex4ever/tesla-llm-ifp/agent/internal/protocol"
+	"github.com/Chex4ever/pirate-fleet/agent/internal/protocol"
 )
 
 type Store struct {
@@ -42,10 +42,30 @@ func (s *Store) List() []protocol.GossipPayload {
 	return out
 }
 
-func (s *Store) ReadyForModel(model string) []protocol.GossipPayload {
+// PickOpts filters ready ships for routing / UI.
+type PickOpts struct {
+	RequireTags []string // all must be present on peer
+	MinVRAMMb   int      // peer capacity (MaxVRAMMb or VRAMMb) must be >= this
+}
+
+func (s *Store) ReadyForModel(model string, opts ...PickOpts) []protocol.GossipPayload {
+	var opt PickOpts
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
 	var out []protocol.GossipPayload
 	for _, p := range s.List() {
 		if p.Mode == protocol.ModeCrowsNest || !p.RuntimeHealthy {
+			continue
+		}
+		if !hasAllTags(p.Tags, opt.RequireTags) {
+			continue
+		}
+		capVRAM := p.MaxVRAMMb
+		if capVRAM <= 0 {
+			capVRAM = p.VRAMMb
+		}
+		if opt.MinVRAMMb > 0 && capVRAM > 0 && capVRAM < opt.MinVRAMMb {
 			continue
 		}
 		if model == "" {
@@ -62,8 +82,8 @@ func (s *Store) ReadyForModel(model string) []protocol.GossipPayload {
 	return out
 }
 
-func (s *Store) PickLeastLoad(model string) (protocol.GossipPayload, bool) {
-	list := s.ReadyForModel(model)
+func (s *Store) PickLeastLoad(model string, opts ...PickOpts) (protocol.GossipPayload, bool) {
+	list := s.ReadyForModel(model, opts...)
 	if len(list) == 0 {
 		return protocol.GossipPayload{}, false
 	}
@@ -74,4 +94,23 @@ func (s *Store) PickLeastLoad(model string) (protocol.GossipPayload, bool) {
 		}
 	}
 	return best, true
+}
+
+func hasAllTags(have, need []string) bool {
+	if len(need) == 0 {
+		return true
+	}
+	set := map[string]bool{}
+	for _, t := range have {
+		set[t] = true
+	}
+	for _, t := range need {
+		if t == "" {
+			continue
+		}
+		if !set[t] {
+			return false
+		}
+	}
+	return true
 }

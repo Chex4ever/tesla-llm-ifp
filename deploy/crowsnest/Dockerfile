@@ -1,12 +1,7 @@
-FROM golang:1.24-alpine AS build
-WORKDIR /src
-RUN apk add --no-cache git ca-certificates
-COPY go.mod go.sum ./
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o /out/tesla-agent ./agent/cmd/tesla-agent
-
+# Expects a pre-built Linux `pirate` binary next to this Dockerfile.
+# (Used by TUI / vpsdeploy; avoids compiling Go on the VPS.)
 FROM alpine:3.21
 RUN apk add --no-cache ca-certificates
-COPY --from=build /out/tesla-agent /usr/local/bin/tesla-agent
+COPY pirate /usr/local/bin/pirate
 EXPOSE 7843
-ENTRYPOINT ["tesla-agent"]
+ENTRYPOINT ["pirate"]

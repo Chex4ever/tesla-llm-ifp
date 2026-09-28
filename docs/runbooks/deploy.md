@@ -4,8 +4,8 @@
 
 ```bash
 sudo ./deploy/scripts/bootstrap-vps.sh
-# clone repo to /opt/tesla-llm-ifp
-cd /opt/tesla-llm-ifp
+# clone repo to /opt/pirate-fleet
+cd /opt/pirate-fleet
 cp deploy/.env.example deploy/.env
 # edit secrets + PUBLIC_* URLs + PUBLIC_NATS_URL=nats://<VPS_IP>:4222
 cd deploy

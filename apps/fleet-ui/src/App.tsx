@@ -12,7 +12,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="shell">
       <aside className="nav">
-        <div className="brand">Tesla <span>Fleet</span></div>
+        <div className="brand">Pirate <span>Fleet</span></div>
         <NavLink to="/" end>Overview</NavLink>
         <NavLink to="/nodes">Nodes</NavLink>
         <NavLink to="/models">Models</NavLink>

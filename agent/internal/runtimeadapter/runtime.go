@@ -71,7 +71,7 @@ func (o *Ollama) EnsureModel(ctx context.Context, m DesiredModel) error {
 		tag = m.ModelID
 	}
 	if m.DownloadURL != "" && m.Format == "gguf" {
-		dir := filepath.Join(os.TempDir(), "tesla-models")
+		dir := filepath.Join(os.TempDir(), "pirate-models")
 		_ = os.MkdirAll(dir, 0o755)
 		dest := filepath.Join(dir, filepath.Base(m.MinioObject))
 		if err := downloadFile(ctx, m.DownloadURL, dest); err != nil {

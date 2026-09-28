@@ -1,66 +1,86 @@
-# Tesla LLM IFP — Pirate Fleet
+# Pirate Fleet
 
-Decentralized self-hosted LLM mesh. **No control-plane brain on a VPS.**
+Decentralized self-hosted LLM mesh. No control-plane brain on a VPS.
 
-| Role | Pirate name | Mode |
-|------|-------------|------|
-| Inference node | **Deckhand** | `worker` |
-| GUI / invites / optional OpenAI API | **Captain** | `captain` |
-| NAT rendezvous + relay | **Crow's Nest** | `crowsnest` |
+**One Go binary.** Every PC is a **ship** (inference + Nest discovery). **Host Nest + UI** is an optional toggle — not a second app.
 
-`fleet.teslant.ru` is a **public Crow's Nest** (zero router): signaling + relay only, no fleet registry, no API keys, no admin. Anyone can run another Nest; ships keep a list and survive Nest outages.
+> [!WARNING]
+> **Work in Progress (WIP)**  
+> Active development. APIs and UX may change. Issues and PRs welcome.
 
-## Quick start (no VPS)
+---
 
-```bash
-# 1) Share a fleet secret among your ships
-export JOIN_SECRET="$(openssl rand -hex 32)"
+## Roles
 
-# 2) First Captain
-tesla-agent enroll --join-secret "$JOIN_SECRET" --name captain-1 --mode captain
-tesla-agent run --mode=captain --expose-api
-# UI: http://127.0.0.1:7842  (or --api/--ui addr)
+| Capability | What it does |
+|------------|----------------|
+| **Ship** (always) | Ollama/vLLM inference, gossip, Nest catalog by RTT |
+| **Host Nest + UI** | Local Nest (`:7843`) + panel at `http://127.0.0.1:7842` |
+| **Crow's Nest** | Standalone / public Nest (`run --mode=crowsnest`) |
 
-# 3) In Captain UI → Create invite → on another PC:
-tesla-agent enroll --join-secret "$JOIN_SECRET" --invite "<token>"
-tesla-agent run --mode=worker
-```
+LAN ships prefer their Host Nest. Public Nest is an uplink between sites. Nest catalog is gossip-driven (multi-hop).
 
-Default Nest URL baked in: `wss://fleet.teslant.ru/nest`. Add your own Nest in the Captain UI.
+---
 
-## Crow's Nest (public or self-hosted)
+## Quick start (TUI)
 
 ```bash
-# Anywhere with a public IP / DNS
-tesla-agent run --mode=crowsnest --listen :7843
+go build -o bin/pirate ./agent/cmd/pirate
+./bin/pirate          # no args → TUI
 ```
 
-Or Docker on `fleet.teslant.ru`:
+1. **Create fleet** — `JOIN_SECRET` generated; Host Nest on.
+2. **Deploy Nest** — VPS host/IP + root password (self-signed TLS).
+3. **Copy join link** — share `pirate://join?…` with another PC.
+4. Other PC: **Join fleet** → paste link → **Run**.
+
+Same app everywhere. Toggle **Host Nest + UI** if this machine should also host a Nest/panel.
+
+Invite from the UI (after **Run** with Host Nest): name + tags + optional max VRAM → **Copy join link**. Ships filter by tag / model / VRAM.
+
+Details: [docs/onboarding.md](docs/onboarding.md) · [docs/crowsnest.md](docs/crowsnest.md).
+
+---
+
+## CLI (advanced)
 
 ```bash
-cd deploy/crowsnest
-cp .env.example .env
-docker compose up -d --build
+pirate join 'pirate://join?secret=…&nest=wss://HOST/nest'
+pirate enroll --join-secret SECRET [--invite TOKEN] [--tags office,gpu]
+pirate run                          # mode from state
+pirate run --mode=captain --expose-api
+pirate run --mode=crowsnest --listen :7843
 ```
 
-See [docs/onboarding.md](docs/onboarding.md) and [docs/crowsnest.md](docs/crowsnest.md).
+---
 
 ## OpenAI API
 
-On a Captain with `--expose-api`:
+With Host Nest + `--expose-api`:
 
 ```bash
-curl http://CAPTAIN:8080/v1/chat/completions \
+curl http://127.0.0.1:8080/v1/chat/completions \
   -H "Authorization: Bearer <key-from-state.json api_keys>" \
   -d '{"model":"llama3.2:1b","messages":[{"role":"user","content":"ahoy"}]}'
 ```
 
-Jobs go Captain → mesh (via Nest if needed) → Deckhand Ollama.
+Optional routing: header `X-Pirate-Tags: office` or JSON field `pirate_tags`.
+
+---
+
+## Public Nest (manual)
+
+Preferred: TUI → **Deploy Nest**. Manual Docker: [deploy/crowsnest/README.md](deploy/crowsnest/README.md).
+
+Ops: [docs/runbooks/pirate-fleet.md](docs/runbooks/pirate-fleet.md).
+
+---
 
 ## Build
 
 ```bash
-go build -o bin/tesla-agent ./agent/cmd/tesla-agent
+go build -o bin/pirate ./agent/cmd/pirate
+# Windows: go build -o bin/pirate.exe ./agent/cmd/pirate
 ```
 
-Legacy monolithic Compose under `deploy/compose.yml` / `apps/fleet-api` is **not** the Pirate Fleet path.
+Legacy Compose under `deploy/compose.yml` / `apps/fleet-api` is **not** the Pirate Fleet path.

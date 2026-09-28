@@ -1,8 +1,10 @@
 {
-	email {$ACME_EMAIL}
+	auto_https off
 }
 
-fleet.teslant.ru {
+:443 {
+	tls /etc/caddy/certs/cert.pem /etc/caddy/certs/key.pem
+
 	handle /healthz {
 		reverse_proxy crowsnest:7843
 	}
@@ -12,4 +14,8 @@ fleet.teslant.ru {
 	handle {
 		reverse_proxy crowsnest:7843
 	}
+}
+
+:80 {
+	redir https://{host}{uri} permanent
 }

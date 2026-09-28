@@ -1,43 +1,61 @@
 # Pirate Fleet onboarding
 
-## Terms
+One app: **`pirate`**. Every PC is a **ship** (inference + Nest discovery). **Host Nest + UI** is an optional toggle, not a separate product.
 
-- **Deckhand** (`worker`) — runs Ollama, gossips status, executes inference jobs.
-- **Captain** (`captain`) — local GUI, creates invites, optional `--expose-api`.
-- **Crow's Nest** (`crowsnest`) — zero NAT router. Default: `wss://fleet.teslant.ru/nest`.
+## Roles (capabilities)
 
-## Prerequisites (Windows Deckhand)
+| Capability | What it does |
+|------------|----------------|
+| Ship (always) | Ollama/vLLM inference, gossip, Nest catalog by RTT |
+| Host Nest + UI | Local Nest on `:7843` + panel at `http://127.0.0.1:7842` |
+| Crow's Nest | Standalone public Nest (`pirate run --mode=crowsnest`) |
 
-- Ollama installed and running locally
-- Outbound WSS to at least one Nest
-- Shared `JOIN_SECRET` for the fleet (from your Captain / ops)
-
-## Join via Captain invite
-
-1. On a Captain, open `http://127.0.0.1:7842` → **Create invite**.
-2. On the new PC:
-
-```powershell
-$env:JOIN_SECRET = "<same secret as captain>"
-.\tesla-agent.exe enroll --join-secret $env:JOIN_SECRET --invite "<token>"
-.\tesla-agent.exe run --mode=worker
-```
-
-3. Ship appears in Captain **Ships** table after gossip (~15s).
-4. **Ensure model** with an Ollama tag (e.g. `llama3.2:1b`).
-
-## Add a second Nest (failover)
-
-1. Someone runs: `tesla-agent run --mode=crowsnest --listen :7843` behind TLS (`wss://nest.example.com/nest`).
-2. Captain UI → **Add Nest URL**.
-3. Re-enroll or edit `state.json` `nests` array on ships, restart.
-
-If `fleet.teslant.ru` dies, ships with another Nest keep rendezvous.
-
-## Captain with public API
+## Golden path (TUI)
 
 ```bash
-tesla-agent run --mode=captain --expose-api --api 0.0.0.0:8080
+pirate
 ```
 
-Put API keys in `state.json` → `api_keys: ["sk-..."]` (empty list = open, local only recommended).
+1. **Create fleet** — generates `JOIN_SECRET`, enables Host Nest.
+2. **Deploy Nest** (optional) — VPS host/IP + root password (self-signed TLS).
+3. **Copy join link** or create invite in the UI (`Run` → open `:7842`).
+4. On another PC: **Join fleet** → paste `pirate://join?…` → **Run**.
+
+Same binary on every machine. Toggle **Host Nest + UI** if this PC should also host a Nest/panel.
+
+## Invite another ship (tags / VRAM)
+
+With Host Nest running, open UI → **Invite ship**:
+
+- Name, tags (e.g. `office`, `fat-pipe`), optional Max VRAM MB
+- **Copy join link** (`pirate://join?secret=…&nest=…&invite=…`)
+- Other PC: `pirate` → Join fleet → paste → Run
+
+Ships appear under **Ships** with tags, models, and VRAM. Filter by tag / model / VRAM ≥ N.
+
+Routing respects tags (`X-Pirate-Tags` or `pirate_tags` in the chat body) and capacity (`max_vram_mb`).
+
+## CLI (advanced)
+
+```powershell
+.\pirate.exe enroll --join-secret $env:JOIN_SECRET --invite "<token>"
+.\pirate.exe run
+```
+
+Or with Host Nest:
+
+```powershell
+.\pirate.exe run --mode=captain --expose-api
+```
+
+## Second site
+
+Share a join link **without** invite (`pirate://join?secret=…&nest=…`) — joins with Host Nest on. Or paste an invite link for a peer-only ship.
+
+## Add Nest / failover
+
+UI → Nest catalog → **Add & advertise**, or TUI **Deploy Nest**. Fleet learns via gossip. Active connections stay ≤ 3 nearest.
+
+## wgmesh
+
+Optional separate L3 WireGuard mesh (`wgmesh` repo). Not required for Crow's Nest.

@@ -3,8 +3,7 @@ param(
   [string]$Invite = "",
   [string]$Name = "",
   [ValidateSet("worker","captain")][string]$Mode = "worker",
-  [string]$AgentExe = ".\tesla-agent.exe",
-  [switch]$ExposeApi
+  [string]$AgentExe = ".\pirate.exe"
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,4 +17,4 @@ if ($LASTEXITCODE -ne 0) { throw "enroll failed" }
 
 & $AgentExe service install
 & $AgentExe service start
-Write-Host "Deckhand/Captain service started. Captain UI default http://127.0.0.1:7842 if mode=captain (run manually with --expose-api for API)."
+Write-Host "Service started. Captain UI: http://127.0.0.1:7842 (mode=captain)."

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Phase 0: bootstrap Ubuntu 24.04 VPS for Tesla LLM control plane.
+# Phase 0: bootstrap Ubuntu 24.04 VPS for Pirate Fleet control plane.
 set -euo pipefail
 
 if [[ "$(id -u)" -ne 0 ]]; then
@@ -37,13 +37,13 @@ ufw allow 41641/udp
 ufw --force enable
 
 # Deploy user
-if ! id -u tesla >/dev/null 2>&1; then
-  useradd -m -s /bin/bash tesla
-  usermod -aG docker tesla
+if ! id -u pirate >/dev/null 2>&1; then
+  useradd -m -s /bin/bash pirate
+  usermod -aG docker pirate
 fi
 
-mkdir -p /opt/tesla-llm-ifp
-chown tesla:tesla /opt/tesla-llm-ifp
+mkdir -p /opt/pirate-fleet
+chown pirate:pirate /opt/pirate-fleet
 
 cat <<'EOF'
 === DNS checklist (A records → this VPS public IP) ===
@@ -56,7 +56,7 @@ cat <<'EOF'
   hs.teslant.ru
 
 Next:
-  1. Clone repo into /opt/tesla-llm-ifp
+  1. Clone repo into /opt/pirate-fleet
   2. cp deploy/.env.example deploy/.env && edit secrets
   3. cd deploy && docker compose up -d
 EOF

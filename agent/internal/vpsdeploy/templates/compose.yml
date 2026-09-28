@@ -1,0 +1,29 @@
+name: pirate-crowsnest
+
+services:
+  caddy:
+    image: caddy:2.9-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/etc/caddy/certs:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - crowsnest
+
+  crowsnest:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: ["run", "--mode=crowsnest", "--listen", ":7843"]
+    expose:
+      - "7843"
+
+volumes:
+  caddy_data:
+  caddy_config:

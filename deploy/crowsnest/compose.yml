@@ -1,5 +1,4 @@
-# Public Crow's Nest — zero router for Pirate Fleet (fleet.teslant.ru)
-# RAM target: ~32–64MB for the agent process (+ Caddy if used).
+# Public Crow's Nest — zero router with openssl self-signed TLS (no ACME).
 name: pirate-crowsnest
 
 services:
@@ -9,10 +8,9 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    environment:
-      ACME_EMAIL: ${ACME_EMAIL:-admin@teslant.ru}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/etc/caddy/certs:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
@@ -20,13 +18,12 @@ services:
 
   crowsnest:
     build:
-      context: ../..
-      dockerfile: deploy/crowsnest/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     restart: unless-stopped
     command: ["run", "--mode=crowsnest", "--listen", ":7843"]
     expose:
       - "7843"
-    # No volumes, no DB — pure in-memory rendezvous/relay
 
 volumes:
   caddy_data:

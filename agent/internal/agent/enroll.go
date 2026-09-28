@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Chex4ever/tesla-llm-ifp/agent/internal/fleetcrypto"
-	"github.com/Chex4ever/tesla-llm-ifp/agent/internal/protocol"
+	"github.com/Chex4ever/pirate-fleet/agent/internal/fleetcrypto"
+	"github.com/Chex4ever/pirate-fleet/agent/internal/protocol"
 	"github.com/google/uuid"
 )
 
@@ -17,6 +17,8 @@ type EnrollOptions struct {
 	Name       string
 	Nests      []string
 	Mode       string
+	Tags       []string
+	MaxVRAMMb  int
 }
 
 func Enroll(opt EnrollOptions) error {
@@ -39,6 +41,8 @@ func Enroll(opt EnrollOptions) error {
 	}
 	nests := append([]string{}, opt.Nests...)
 	name := opt.Name
+	tags := append([]string{}, opt.Tags...)
+	maxVRAM := opt.MaxVRAMMb
 	if opt.Invite != "" {
 		inv, err := fleetcrypto.ParseInvite(opt.JoinSecret, opt.Invite)
 		if err != nil {
@@ -51,6 +55,12 @@ func Enroll(opt EnrollOptions) error {
 		if inv.ModeHint != "" && opt.Mode == "" {
 			st.Mode = inv.ModeHint
 		}
+		if len(tags) == 0 && len(inv.Tags) > 0 {
+			tags = append([]string{}, inv.Tags...)
+		}
+		if maxVRAM == 0 && inv.MaxVRAMMb > 0 {
+			maxVRAM = inv.MaxVRAMMb
+		}
 	}
 	if name != "" {
 		st.Name = name
@@ -59,16 +69,20 @@ func Enroll(opt EnrollOptions) error {
 		host, _ := os.Hostname()
 		st.Name = host
 	}
-	st.Nests = uniqueNests(nests, st.Nests)
-	if len(st.Nests) == 0 {
-		st.Nests = []string{protocol.DefaultNestURL}
+	if len(tags) > 0 {
+		st.Tags = uniqueTags(tags)
 	}
+	if maxVRAM > 0 {
+		st.MaxVRAMMb = maxVRAM
+	}
+	st.Nests = uniqueNests(nests, st.Nests)
 	if err := SaveState(opt.ConfigDir, st); err != nil {
 		return err
 	}
 	env := fmt.Sprintf("JOIN_SECRET=%s\nMODE=%s\n", st.JoinSecret, st.Mode)
 	_ = os.WriteFile(DefaultConfigPath(), []byte(env), 0o600)
-	fmt.Printf("enrolled node %s (%s) nests=%s\n", st.NodeID, st.Name, strings.Join(st.Nests, ","))
+	fmt.Printf("enrolled node %s (%s) mode=%s nests=%s tags=%s\n",
+		st.NodeID, st.Name, st.Mode, strings.Join(st.Nests, ","), strings.Join(st.Tags, ","))
 	return nil
 }
 
@@ -84,6 +98,20 @@ func uniqueNests(lists ...[]string) []string {
 			seen[n] = true
 			out = append(out, n)
 		}
+	}
+	return out
+}
+
+func uniqueTags(tags []string) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, t := range tags {
+		t = strings.TrimSpace(t)
+		if t == "" || seen[t] {
+			continue
+		}
+		seen[t] = true
+		out = append(out, t)
 	}
 	return out
 }

@@ -2,39 +2,41 @@
 
 A **Crow's Nest** is a Pirate Fleet NAT rendezvous and byte-relay. It is **not** the fleet brain.
 
-## What it does
+## Who runs a Nest?
 
-- Accepts WebSocket connections on `/nest`
-- Registers ephemeral peer presence in RAM
-- Relays envelopes between `node_id`s when direct path is unavailable
-- Exposes `/healthz`
+| Who | Role |
+|-----|------|
+| **Captain** | Always embeds a Nest for local Deckhands (LAN). Advertises it via gossip. |
+| **`crowsnest` mode** | Standalone / public Nest for bootstrap and inter-site hops. |
 
-## What it does NOT do
+Deckhands in the same LAN should connect through **their Captain Nest** first. Public Nest is an uplink between Captain islands.
 
-- No Postgres / SQLite / disk state for the fleet
-- No OpenAI API, no API keys, no model registry
-- No admin UI, no invites storage
-- No authority over who is Captain
+## Deploy (recommended)
 
-## Run your own
+From TUI: **Deploy Nest** (`n`) — host/IP + root password. Uses self-signed TLS (Caddy `tls internal`). No Let's Encrypt.
+
+Manual Docker: [deploy/crowsnest/README.md](../deploy/crowsnest/README.md).
+
+Clients dial `wss://HOST/nest` with TLS skip-verify (self-signed).
+
+## Multi-hop
+
+If Deckhand A is on Captain A’s Nest and Deckhand B on Captain B’s Nest, traffic can go:
+
+`A → CapA Nest → public Nest → CapB Nest → B`
+
+Nests forward with TTL and `via[]` to prevent loops (max 3 hops).
+
+## Dynamic catalog
+
+Captains broadcast `nest_advert` (HMAC with `JOIN_SECRET`). Ships merge into a catalog (max 32), keep up to 3 **active** Nest WebSockets by RTT.
+
+## Standalone Nest (local)
 
 ```bash
-tesla-agent run --mode=crowsnest --listen :7843
-# Put TLS in front (Caddy/nginx) → wss://your-nest.example/nest
+pirate run --mode=crowsnest --listen :7843
 ```
-
-Docker (same layout as public nest):
-
-```bash
-cd deploy/crowsnest
-# Point Caddyfile server_name to your domain
-docker compose up -d --build
-```
-
-## Public default
-
-`fleet.teslant.ru` ships as the default Nest URL in the agent. Treat it as a community lookout post — replaceable anytime via Captain Nest list.
 
 ## Resources
 
-Single Go binary: typically **32–64 MB RAM**. No database volume required.
+Nest process: typically **32–64 MB RAM**, no database.

@@ -26,7 +26,7 @@ export default function Login() {
   return (
     <div className="login-wrap">
       <form className="login" onSubmit={onSubmit}>
-        <h1>Tesla Fleet</h1>
+        <h1>Pirate Fleet</h1>
         <p className="muted">Control plane for distributed LLM workers</p>
         <div className="field" style={{ marginTop: "1.5rem" }}>
           <label>Username</label>

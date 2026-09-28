@@ -1,4 +1,4 @@
-const TOKEN_KEY = "tesla_fleet_token";
+const TOKEN_KEY = "pirate_fleet_token";
 
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);

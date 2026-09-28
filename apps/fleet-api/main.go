@@ -9,11 +9,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Chex4ever/tesla-llm-ifp/apps/fleet-api/server"
-	"github.com/Chex4ever/tesla-llm-ifp/internal/bus"
-	"github.com/Chex4ever/tesla-llm-ifp/internal/config"
-	"github.com/Chex4ever/tesla-llm-ifp/internal/db"
-	"github.com/Chex4ever/tesla-llm-ifp/internal/headscale"
+	"github.com/Chex4ever/pirate-fleet/apps/fleet-api/server"
+	"github.com/Chex4ever/pirate-fleet/internal/bus"
+	"github.com/Chex4ever/pirate-fleet/internal/config"
+	"github.com/Chex4ever/pirate-fleet/internal/db"
+	"github.com/Chex4ever/pirate-fleet/internal/headscale"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
 )
@@ -22,7 +22,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	pool, err := db.Connect(ctx, config.Get("DATABASE_URL", "postgres://tesla:tesla@localhost:5432/tesla?sslmode=disable"))
+	pool, err := db.Connect(ctx, config.Get("DATABASE_URL", "postgres://pirate:pirate@localhost:5432/pirate?sslmode=disable"))
 	if err != nil {
 		log.Fatalf("db: %v", err)
 	}

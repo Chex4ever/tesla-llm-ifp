@@ -14,8 +14,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Chex4ever/tesla-llm-ifp/internal/bus"
-	"github.com/Chex4ever/tesla-llm-ifp/internal/config"
+	"github.com/Chex4ever/pirate-fleet/internal/bus"
+	"github.com/Chex4ever/pirate-fleet/internal/config"
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -25,11 +25,11 @@ import (
 
 var (
 	reqTotal = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "tesla_gateway_requests_total",
+		Name: "pirate_gateway_requests_total",
 		Help: "Total gateway requests",
 	}, []string{"path", "code"})
 	reqDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "tesla_gateway_request_duration_seconds",
+		Name:    "pirate_gateway_request_duration_seconds",
 		Help:    "Gateway request duration",
 		Buckets: prometheus.DefBuckets,
 	}, []string{"path"})
@@ -174,7 +174,7 @@ func (g *gateway) handleModels(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			seen[m] = true
-			data = append(data, map[string]any{"id": m, "object": "model", "owned_by": "tesla-llm"})
+			data = append(data, map[string]any{"id": m, "object": "model", "owned_by": "pirate-fleet"})
 		}
 	}
 	writeJSON(w, map[string]any{"object": "list", "data": data})
@@ -267,7 +267,7 @@ func (g *gateway) handleChatCompletions(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("X-Tesla-Node", node.Name)
+	w.Header().Set("X-Pirate-Node", node.Name)
 	if resp.StatusCode == 0 {
 		resp.StatusCode = 200
 	}
@@ -299,7 +299,7 @@ func (g *gateway) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("X-Tesla-Node", node.Name)
+	w.Header().Set("X-Pirate-Node", node.Name)
 	w.WriteHeader(resp.StatusCode)
 	_, _ = w.Write(resp.Body)
 }

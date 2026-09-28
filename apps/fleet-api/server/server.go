@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Chex4ever/tesla-llm-ifp/internal/auth"
-	"github.com/Chex4ever/tesla-llm-ifp/internal/bus"
-	"github.com/Chex4ever/tesla-llm-ifp/internal/headscale"
+	"github.com/Chex4ever/pirate-fleet/internal/auth"
+	"github.com/Chex4ever/pirate-fleet/internal/bus"
+	"github.com/Chex4ever/pirate-fleet/internal/headscale"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/minio/minio-go/v7"
@@ -24,7 +24,7 @@ import (
 )
 
 var nodesOnline = promauto.NewGauge(prometheus.GaugeOpts{
-	Name: "tesla_fleet_nodes_online",
+	Name: "pirate_fleet_nodes_online",
 	Help: "Number of online fleet nodes",
 })
 
@@ -369,7 +369,7 @@ func (s *Server) handleCreateInvite(w http.ResponseWriter, r *http.Request) {
 		"download_windows": s.deps.Cfg.PublicFleetURL + "/api/v1/agent/windows/latest",
 		"download_linux":   s.deps.Cfg.PublicFleetURL + "/api/v1/agent/linux/latest",
 		"instructions": map[string]string{
-			"windows": fmt.Sprintf("Download the installer, run it, paste token:\n%s\n\nOr PowerShell:\n$env:FLEET_URL='%s'; $env:INVITE_TOKEN='%s'; .\\tesla-agent.exe enroll",
+			"windows": fmt.Sprintf("Download the installer, run it, paste token:\n%s\n\nOr PowerShell:\n$env:FLEET_URL='%s'; $env:INVITE_TOKEN='%s'; .\\pirate.exe enroll",
 				token, s.deps.Cfg.PublicFleetURL, token),
 			"linux": fmt.Sprintf("curl -fsSL %s/api/v1/agent/linux/install.sh | sudo bash -s -- --token %s",
 				s.deps.Cfg.PublicFleetURL, token),
@@ -837,11 +837,11 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleAgentWindowsLatest(w http.ResponseWriter, r *http.Request) {
-	s.serveAgentArtifact(w, r, "windows/tesla-agent.exe", "tesla-agent.exe")
+	s.serveAgentArtifact(w, r, "windows/pirate.exe", "pirate.exe")
 }
 
 func (s *Server) handleAgentLinuxLatest(w http.ResponseWriter, r *http.Request) {
-	s.serveAgentArtifact(w, r, "linux/tesla-agent", "tesla-agent")
+	s.serveAgentArtifact(w, r, "linux/pirate", "pirate")
 }
 
 func (s *Server) serveAgentArtifact(w http.ResponseWriter, r *http.Request, object, filename string) {
@@ -853,7 +853,7 @@ func (s *Server) serveAgentArtifact(w http.ResponseWriter, r *http.Request, obje
 		}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"message":  "Agent artifact not uploaded yet. Build with: go build -o tesla-agent ./agent/cmd/tesla-agent and upload to MinIO bucket agents/" + object,
+		"message":  "Agent artifact not uploaded yet. Build with: go build -o pirate ./agent/cmd/pirate and upload to MinIO bucket agents/" + object,
 		"filename": filename,
 		"object":   object,
 		"bucket":   s.deps.Cfg.MinioBucketAgents,
@@ -870,27 +870,27 @@ if [[ "${1:-}" == "--token" ]]; then TOKEN="${2:-}"; fi
 TOKEN="${TOKEN:-%s}"
 if [[ -z "$TOKEN" ]]; then echo "usage: install.sh --token <invite>"; exit 1; fi
 TMP="$(mktemp -d)"
-curl -fsSL "$FLEET_URL/api/v1/agent/linux/latest" -o "$TMP/tesla-agent" || true
-if [[ ! -s "$TMP/tesla-agent" ]] || file "$TMP/tesla-agent" | grep -qi json; then
-  echo "Agent binary not available in registry yet. Build and upload linux/tesla-agent to MinIO agents bucket."
+curl -fsSL "$FLEET_URL/api/v1/agent/linux/latest" -o "$TMP/pirate" || true
+if [[ ! -s "$TMP/pirate" ]] || file "$TMP/pirate" | grep -qi json; then
+  echo "Agent binary not available in registry yet. Build and upload linux/pirate to MinIO agents bucket."
   exit 1
 fi
-install -m 0755 "$TMP/tesla-agent" /usr/local/bin/tesla-agent
-mkdir -p /etc/tesla-agent
-cat >/etc/tesla-agent/agent.env <<EOF
+install -m 0755 "$TMP/pirate" /usr/local/bin/pirate
+mkdir -p /etc/pirate
+cat >/etc/pirate/agent.env <<EOF
 FLEET_URL=$FLEET_URL
 INVITE_TOKEN=$TOKEN
 EOF
-/usr/local/bin/tesla-agent enroll --config /etc/tesla-agent/agent.env
-cat >/etc/systemd/system/tesla-agent.service <<'UNIT'
+/usr/local/bin/pirate enroll --config /etc/pirate/agent.env
+cat >/etc/systemd/system/pirate.service <<'UNIT'
 [Unit]
-Description=Tesla LLM Agent
+Description=Pirate Fleet
 After=network-online.target
 Wants=network-online.target
 
 [Service]
-EnvironmentFile=/etc/tesla-agent/agent.env
-ExecStart=/usr/local/bin/tesla-agent run
+EnvironmentFile=/etc/pirate/agent.env
+ExecStart=/usr/local/bin/pirate run
 Restart=always
 RestartSec=5
 
@@ -898,8 +898,8 @@ RestartSec=5
 WantedBy=multi-user.target
 UNIT
 systemctl daemon-reload
-systemctl enable --now tesla-agent
-echo "Tesla agent installed and started."
+systemctl enable --now pirate
+echo "Pirate Fleet agent installed and started."
 `, s.deps.Cfg.PublicFleetURL, token)
 	w.Header().Set("Content-Type", "text/x-shellscript")
 	_, _ = w.Write([]byte(script))

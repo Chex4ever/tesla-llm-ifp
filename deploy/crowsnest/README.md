@@ -1,12 +1,29 @@
-# Deploy Crow's Nest (`fleet.teslant.ru`)
+# Deploy Crow's Nest
 
-Zero router for Pirate Fleet.
+Zero router for Pirate Fleet. Self-signed TLS via openssl (no Let's Encrypt).
 
-```bash
-cp .env.example .env
-# DNS: fleet.teslant.ru → this host
-docker compose up -d --build
-curl -fsS https://fleet.teslant.ru/healthz
+## From TUI (recommended)
+
+```text
+pirate
+  → Become Captain
+  → Deploy Nest  (host/IP + root password)
 ```
 
-Self-hosted Nest: change the site name in `Caddyfile` and tell Captains the `wss://your-domain/nest` URL.
+## Manual
+
+```bash
+# Place a Linux pirate binary next to Dockerfile, then:
+cp .env.example .env
+# edit NEST_HOST=your.vps.ip.or.hostname
+bash ../... # or:
+openssl ... # easier: copy gen-certs from agent/internal/vpsdeploy/templates
+# From repo:
+bash agent/internal/vpsdeploy/templates/gen-certs.sh "$NEST_HOST" deploy/crowsnest/certs
+cd deploy/crowsnest
+docker compose up -d --build
+
+curl -kfsS https://$NEST_HOST/healthz
+```
+
+Browser will warn about the self-signed cert — that is expected. Clients use InsecureSkipVerify for `wss://$NEST_HOST/nest`.

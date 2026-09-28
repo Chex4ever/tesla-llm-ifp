@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chex4ever/tesla-llm-ifp/agent/internal/protocol"
+	"github.com/Chex4ever/pirate-fleet/agent/internal/protocol"
 	"github.com/gorilla/websocket"
 )
 
 func TestNestRegisterAndPeerList(t *testing.T) {
-	s := New()
+	s := New("test-nest", "ws://localhost/nest", "public")
 	srv := httptest.NewServer(s.Handler())
 	defer srv.Close()
 

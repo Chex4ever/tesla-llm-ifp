@@ -42,7 +42,7 @@ export default function APIKeys() {
       <div className="top">
         <div>
           <h1>API Keys</h1>
-          <p className="muted">Keys for api.teslant.ru (OpenAI-compatible)</p>
+          <p className="muted">Keys for the OpenAI-compatible API</p>
         </div>
       </div>
 

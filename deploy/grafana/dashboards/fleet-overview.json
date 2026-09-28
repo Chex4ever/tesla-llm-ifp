@@ -15,7 +15,7 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "tesla_fleet_nodes_online",
+          "expr": "pirate_fleet_nodes_online",
           "refId": "A"
         }
       ]
@@ -29,7 +29,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "rate(tesla_gateway_requests_total[1m])",
+          "expr": "rate(pirate_gateway_requests_total[1m])",
           "refId": "A"
         }
       ]
@@ -43,17 +43,17 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(tesla_gateway_request_duration_seconds_bucket[5m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(pirate_gateway_request_duration_seconds_bucket[5m])) by (le))",
           "refId": "A"
         }
       ]
     }
   ],
   "schemaVersion": 39,
-  "tags": ["tesla"],
+  "tags": ["pirate"],
   "templating": { "list": [] },
   "time": { "from": "now-1h", "to": "now" },
-  "title": "Tesla Fleet Overview",
-  "uid": "tesla-fleet-overview",
+  "title": "Pirate Fleet Overview",
+  "uid": "pirate-fleet-overview",
   "version": 1
 }

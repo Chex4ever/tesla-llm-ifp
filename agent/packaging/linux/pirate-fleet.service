@@ -1,0 +1,13 @@
+[Unit]
+Description=Pirate Fleet ship
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+EnvironmentFile=/etc/pirate-fleet/agent.env
+ExecStart=/usr/local/bin/pirate run --config-dir /etc/pirate-fleet
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

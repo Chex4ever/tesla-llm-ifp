@@ -40,7 +40,7 @@ func APIKey() (raw, prefix, hash string, err error) {
 	if err != nil {
 		return "", "", "", err
 	}
-	raw = "sk-tesla-" + raw
+	raw = "sk-pirate-" + raw
 	if len(raw) < 16 {
 		return "", "", "", fmt.Errorf("api key too short")
 	}
