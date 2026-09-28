@@ -1,0 +1,23 @@
+groups:
+  - name: tesla-fleet
+    rules:
+      - alert: NoOnlineWorkers
+        expr: tesla_fleet_nodes_online == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: No Tesla LLM workers online
+          description: Fleet reports zero online nodes for 10 minutes.
+
+      - alert: GatewayHighErrorRate
+        expr: |
+          sum(rate(tesla_gateway_requests_total{code=~"5..|Bad Gateway|Service Unavailable"}[5m]))
+            /
+          clamp_min(sum(rate(tesla_gateway_requests_total[5m])), 1)
+            > 0.2
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: High gateway error rate

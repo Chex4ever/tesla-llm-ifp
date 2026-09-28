@@ -1,0 +1,39 @@
+{
+	email {$ACME_EMAIL}
+}
+
+fleet.{$DOMAIN_ROOT} {
+	handle /api/* {
+		reverse_proxy fleet-api:8081
+	}
+	handle /agent/* {
+		reverse_proxy fleet-api:8081
+	}
+	handle {
+		reverse_proxy fleet-ui:80
+	}
+}
+
+api.{$DOMAIN_ROOT} {
+	reverse_proxy gateway:8080
+}
+
+chat.{$DOMAIN_ROOT} {
+	reverse_proxy open-webui:8080
+}
+
+grafana.{$DOMAIN_ROOT} {
+	reverse_proxy grafana:3000
+}
+
+models.{$DOMAIN_ROOT} {
+	reverse_proxy minio:9000
+}
+
+registry.{$DOMAIN_ROOT} {
+	reverse_proxy registry:5000
+}
+
+hs.{$DOMAIN_ROOT} {
+	reverse_proxy headscale:8080
+}

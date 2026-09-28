@@ -1,0 +1,46 @@
+server_url: https://hs.teslant.ru
+listen_addr: 0.0.0.0:8080
+metrics_listen_addr: 127.0.0.1:9090
+
+grpc_listen_addr: 0.0.0.0:50443
+grpc_allow_insecure: true
+
+noise:
+  private_key_path: /var/lib/headscale/noise_private.key
+
+prefixes:
+  v4: 100.64.0.0/10
+  v6: fd7a:115c:a1e0::/48
+
+derp:
+  server:
+    enabled: true
+    region_id: 999
+    region_code: tesla
+    region_name: Tesla LLM DERP
+    stun_listen_addr: 0.0.0.0:3478
+  urls: []
+  auto_update_enabled: false
+
+database:
+  type: sqlite
+  sqlite:
+    path: /var/lib/headscale/db.sqlite
+
+dns:
+  magic_dns: true
+  base_domain: workers.teslant.ru
+  nameservers:
+    global:
+      - 1.1.1.1
+      - 8.8.8.8
+
+unix_socket: /var/run/headscale/headscale.sock
+unix_socket_permission: "0770"
+
+log:
+  level: info
+
+policy:
+  mode: file
+  path: /etc/headscale/acl.yaml

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pirate Fleet — Captain</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b1220; --panel: #142033; --line: rgba(148,163,184,.2);
+      --text: #e8eef7; --muted: #94a3b8; --accent: #f59e0b; --ok: #4ade80;
+      --font: "DM Sans", system-ui, sans-serif; --mono: "JetBrains Mono", monospace;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--font); color: var(--text);
+      background: radial-gradient(900px 500px at 10% -10%, rgba(245,158,11,.12), transparent),
+                  linear-gradient(180deg, #0b1220, #070b14); min-height: 100vh; }
+    header { padding: 1.5rem 2rem; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+    h1 { margin: 0; font-size: 1.35rem; } h1 span { color: var(--accent); }
+    main { padding: 1.5rem 2rem; display: grid; gap: 1rem; }
+    .panel { background: rgba(20,32,51,.85); border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.2rem; }
+    .muted { color: var(--muted); } .mono { font-family: var(--mono); font-size: .85rem; }
+    table { width: 100%; border-collapse: collapse; } th, td { text-align: left; padding: .65rem .4rem; border-bottom: 1px solid var(--line); }
+    th { color: var(--muted); font-weight: 500; font-size: .85rem; }
+    button, input { font: inherit; border-radius: 10px; border: 1px solid var(--line); background: #0b1220; color: var(--text); padding: .55rem .85rem; }
+    button { cursor: pointer; background: linear-gradient(135deg, #d97706, #f59e0b); color: #1c1003; border: none; font-weight: 600; }
+    .row { display: flex; gap: .6rem; flex-wrap: wrap; align-items: end; }
+    .badge { display: inline-block; padding: .1rem .5rem; border-radius: 999px; border: 1px solid var(--line); font-size: .75rem; }
+    .badge.ok { color: var(--ok); } .pre { white-space: pre-wrap; background: #0b1220; border-radius: 10px; padding: .8rem; border: 1px solid var(--line); }
+    label { display: block; color: var(--muted); font-size: .8rem; margin-bottom: .25rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Pirate <span>Fleet</span> · Captain</h1>
+    <div class="muted" id="meta">loading…</div>
+  </header>
+  <main>
+    <section class="panel">
+      <h3 style="margin-top:0">Add Deckhand (invite)</h3>
+      <div class="row">
+        <div><label>Name</label><input id="invName" value="deckhand-01" /></div>
+        <button onclick="createInvite()">Create invite</button>
+      </div>
+      <div id="inviteOut" class="pre" style="margin-top:0.75rem; display:none"></div>
+    </section>
+    <section class="panel">
+      <h3 style="margin-top:0">Crow's Nests</h3>
+      <p class="muted">Zero routers for NAT. Default + your own — fleet survives if one Nest dies.</p>
+      <div class="row">
+        <div style="flex:1"><label>Add Nest URL</label><input id="nestURL" placeholder="wss://nest.example.com/nest" style="width:100%" /></div>
+        <button onclick="addNest()">Add</button>
+      </div>
+      <ul id="nests" class="mono"></ul>
+    </section>
+    <section class="panel">
+      <h3 style="margin-top:0">Ships (gossip roster)</h3>
+      <table>
+        <thead><tr><th>Name</th><th>Mode</th><th>GPU</th><th>Models</th><th>Load</th><th></th></tr></thead>
+        <tbody id="peers"></tbody>
+      </table>
+    </section>
+    <section class="panel">
+      <h3 style="margin-top:0">Ensure model on ship</h3>
+      <div class="row">
+        <div><label>Node ID</label><input id="ensNode" class="mono" style="width:220px" /></div>
+        <div><label>Ollama tag / model</label><input id="ensModel" value="llama3.2:1b" /></div>
+        <button onclick="ensureModel()">Push</button>
+      </div>
+    </section>
+  </main>
+  <script>
+    async function refresh() {
+      const res = await fetch('/api/v1/peers');
+      const data = await res.json();
+      document.getElementById('meta').textContent = (data.peers||[]).length + ' peers · ' + (data.nests||[]).length + ' nests';
+      const ul = document.getElementById('nests');
+      ul.innerHTML = (data.nests||[]).map(n => '<li>'+n+'</li>').join('') || '<li class="muted">none</li>';
+      const tb = document.getElementById('peers');
+      tb.innerHTML = (data.peers||[]).map(p => `<tr>
+        <td><strong>${p.name||p.node_id.slice(0,8)}</strong><div class="mono muted">${p.node_id}</div></td>
+        <td><span class="badge ${p.runtime_healthy?'ok':''}">${p.mode}</span>${p.expose_api?' · API':''}</td>
+        <td>${p.gpu_name||'—'} ${p.vram_mb? '('+p.vram_mb+'MB)':''}</td>
+        <td class="mono">${(p.models_ready||[]).join(', ')||'—'}</td>
+        <td>${p.load||0}</td>
+        <td><button onclick="document.getElementById('ensNode').value='${p.node_id}'">Select</button></td>
+      </tr>`).join('') || '<tr><td colspan="6" class="muted">No ships yet — create an invite</td></tr>';
+    }
+    async function createInvite() {
+      const name = document.getElementById('invName').value;
+      const res = await fetch('/api/v1/invites', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name}) });
+      const data = await res.json();
+      const el = document.getElementById('inviteOut');
+      el.style.display = 'block';
+      el.textContent = 'Token:\n' + data.token + '\n\n' + (data.instructions?.enroll||'') + '\n' + (data.instructions?.run||'');
+    }
+    async function addNest() {
+      const url = document.getElementById('nestURL').value;
+      await fetch('/api/v1/nests', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url}) });
+      document.getElementById('nestURL').value = '';
+      refresh();
+    }
+    async function ensureModel() {
+      const node_id = document.getElementById('ensNode').value;
+      const model_id = document.getElementById('ensModel').value;
+      await fetch('/api/v1/ensure-model', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ node_id, model_id, ollama_tag: model_id, format: 'ollama' }) });
+      alert('EnsureModel sent');
+    }
+    refresh(); setInterval(refresh, 5000);
+  </script>
+</body>
+</html>

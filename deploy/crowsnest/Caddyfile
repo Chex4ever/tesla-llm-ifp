@@ -1,0 +1,15 @@
+{
+	email {$ACME_EMAIL}
+}
+
+fleet.teslant.ru {
+	handle /healthz {
+		reverse_proxy crowsnest:7843
+	}
+	handle /nest {
+		reverse_proxy crowsnest:7843
+	}
+	handle {
+		reverse_proxy crowsnest:7843
+	}
+}

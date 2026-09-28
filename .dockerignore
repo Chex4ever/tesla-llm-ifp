@@ -1,0 +1,13 @@
+.git
+bin
+**/node_modules
+**/dist
+deploy/.env
+deploy/backups
+*.exe
+**/.DS_Store
+agent/packaging
+docs
+*.md
+!go.mod
+!go.sum

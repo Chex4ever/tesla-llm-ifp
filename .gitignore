@@ -1,0 +1,16 @@
+.env
+deploy/.env
+deploy/backups/
+*.exe
+bin/
+dist/
+node_modules/
+apps/fleet-ui/dist/
+.DS_Store
+*.log
+.idea/
+.vscode/
+coverage/
+vendor/
+agent/state.json
+*.sqlite

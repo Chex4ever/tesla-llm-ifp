@@ -1,0 +1,9 @@
+apiVersion: 1
+providers:
+  - name: tesla
+    orgId: 1
+    folder: Tesla LLM
+    type: file
+    disableDeletion: false
+    options:
+      path: /var/lib/grafana/dashboards

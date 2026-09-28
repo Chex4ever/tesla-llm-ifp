@@ -1,0 +1,13 @@
+[Unit]
+Description=Tesla LLM Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+EnvironmentFile=/etc/tesla-agent/agent.env
+ExecStart=/usr/local/bin/tesla-agent run --config /etc/tesla-agent/agent.env
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

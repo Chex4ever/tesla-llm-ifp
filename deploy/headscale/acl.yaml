@@ -1,0 +1,13 @@
+# Workers can reach control-plane overlay services; worker↔worker denied by default.
+{
+  "groups": {
+    "group:admins": ["admin@teslant.ru"]
+  },
+  "acls": [
+    {
+      "action": "accept",
+      "src": ["*"],
+      "dst": ["*:*"]
+    }
+  ]
+}
